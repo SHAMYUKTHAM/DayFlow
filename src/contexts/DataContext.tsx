@@ -276,47 +276,45 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const toggleTaskStatus = useCallback(
     (id: string) => {
-      setTasks((prev) => {
-        const task = prev.find((t) => t.id === id);
-        if (!task) return prev;
+      const task = tasks.find((t) => t.id === id);
+      if (!task) return;
 
-        const isBecomingCompleted = task.status !== 'completed';
-        const updatedStatus: TaskStatus = isBecomingCompleted ? 'completed' : 'pending';
-        const now = new Date().toISOString();
+      const isBecomingCompleted = task.status !== 'completed';
+      const updatedStatus: TaskStatus = isBecomingCompleted ? 'completed' : 'pending';
+      const now = new Date().toISOString();
 
-        const updated = prev.map((t) =>
-          t.id === id
-            ? {
-                ...t,
-                status: updatedStatus,
-                completedAt: isBecomingCompleted ? now : undefined,
-                updatedAt: now,
-              }
-            : t
-        );
+      const updated = tasks.map((t) =>
+        t.id === id
+          ? {
+              ...t,
+              status: updatedStatus,
+              completedAt: isBecomingCompleted ? now : undefined,
+              updatedAt: now,
+            }
+          : t
+      );
 
-        if (isBecomingCompleted) {
-          showToast('✓ Task completed');
-          // If all tasks for that day are now completed, trigger gentle confetti
-          const dayTasks = updated.filter((t) => t.dueDate === task.dueDate);
-          const allCompleted = dayTasks.length > 1 && dayTasks.every((t) => t.status === 'completed');
-          if (allCompleted) {
-            confetti({
-              particleCount: 50,
-              spread: 60,
-              origin: { y: 0.8 },
-              colors: ['#f59e0b', '#10b981', '#6366f1', '#e11d48'],
-            });
-            showToast('🎉 All tasks completed for today!');
-          }
-        } else {
-          showToast('Task marked pending', 'info');
+      setTasks(updated);
+
+      if (isBecomingCompleted) {
+        showToast('✓ Task completed');
+        // If all tasks for that day are now completed, trigger gentle confetti
+        const dayTasks = updated.filter((t) => t.dueDate === task.dueDate);
+        const allCompleted = dayTasks.length > 1 && dayTasks.every((t) => t.status === 'completed');
+        if (allCompleted) {
+          confetti({
+            particleCount: 50,
+            spread: 60,
+            origin: { y: 0.8 },
+            colors: ['#f59e0b', '#10b981', '#6366f1', '#e11d48'],
+          });
+          showToast('🎉 All tasks completed for today!');
         }
-
-        return updated;
-      });
+      } else {
+        showToast('Task marked pending', 'info');
+      }
     },
-    [showToast]
+    [tasks, showToast]
   );
 
   const setTaskPriority = useCallback((id: string, priority: Priority) => {

@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { MoodType, Task } from '../../types';
 import { useData } from '../../contexts/DataContext';
 import { MoodSelector } from '../common/MoodSelector';
-import { SUGGESTED_TAGS, formatDateLabel, getAutoFilledDateParts } from '../../utils/constants';
+import { SUGGESTED_TAGS, formatDateLabel, getAutoFilledDateParts, DEFAULT_MOODS } from '../../utils/constants';
 import {
   Bold,
   Italic,
@@ -51,12 +51,17 @@ export const DiaryEditor: React.FC<DiaryEditorProps> = ({
   const [tags, setTags] = useState<string[]>(initialTags);
   const [tagInput, setTagInput] = useState('');
   const [wordCount, setWordCount] = useState(0);
+  const [isMoodDropdownOpen, setIsMoodDropdownOpen] = useState(false);
 
   const editorRef = useRef<HTMLDivElement>(null);
   const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
 
+  const isInitialized = useRef(false);
+
   // Sync state if date or props change
   useEffect(() => {
+    if (isInitialized.current) return;
+
     setTitle(initialTitle || '');
     setMood(initialMood || null);
     setTags(initialTags || []);
@@ -64,7 +69,8 @@ export const DiaryEditor: React.FC<DiaryEditorProps> = ({
       editorRef.current.innerHTML = initialContent || '<p>Tell your story...</p>';
       calculateWords();
     }
-  }, [date, initialTitle, initialContent, initialMood, initialTags]);
+    isInitialized.current = true;
+  }, [initialTitle, initialContent, initialMood, initialTags]);
 
   const calculateWords = () => {
     if (!editorRef.current) return;
@@ -90,6 +96,13 @@ export const DiaryEditor: React.FC<DiaryEditorProps> = ({
       saveDiaryEntry(date, title.trim() || 'Daily Journal', htmlContent, mood, tags);
     }, 1200);
   }, [date, title, mood, tags, saveDiaryEntry]);
+
+  const handleManualSave = () => {
+    if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+    if (!editorRef.current) return;
+    saveDiaryEntry(date, title.trim() || 'Daily Journal', editorRef.current.innerHTML, mood, tags);
+    showToast('Journal saved', 'success');
+  };
 
   const handleContentInput = () => {
     calculateWords();
@@ -160,20 +173,48 @@ export const DiaryEditor: React.FC<DiaryEditorProps> = ({
                     {dateParts.dayOfWeek}, {dateParts.monthName} {dateParts.dayNumber}, {dateParts.year}
                   </h2>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-stone-500 dark:text-stone-400">
-                  <span className="text-amber-600 dark:text-amber-500 font-medium">Auto-filled</span>
-                  <span aria-hidden="true">·</span>
-                  <span>{wordCount} words</span>
-                  <span aria-hidden="true">·</span>
-                  <span>{Math.max(1, Math.ceil(wordCount / 200))} min read</span>
-                </div>
               </div>
             </div>
 
-            {/* Autosave status */}
-            <div className="flex items-center gap-2 text-xs text-stone-400 dark:text-stone-500">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span>{lastSavedText}</span>
+            <div className="relative">
+              <button
+                type="button"
+                onClick={() => setIsMoodDropdownOpen(!isMoodDropdownOpen)}
+                className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-stone-100 dark:bg-stone-800/80 border border-stone-200 dark:border-stone-700 text-xs font-medium hover:bg-stone-200 dark:hover:bg-stone-700 transition-colors"
+              >
+                {mood ? (
+                  <>
+                    <span>{DEFAULT_MOODS[mood].emoji}</span>
+                    <span>{DEFAULT_MOODS[mood].label}</span>
+                  </>
+                ) : (
+                  <span className="text-stone-500">How did today feel?</span>
+                )}
+                <svg className={`w-3 h-3 text-stone-400 transition-transform ${isMoodDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
+              </button>
+
+              {isMoodDropdownOpen && (
+                <div className="absolute right-0 mt-1.5 z-10 w-36 p-1.5 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl shadow-lg flex flex-col gap-0.5">
+                  {Object.values(DEFAULT_MOODS).map((m) => (
+                    <button
+                      key={m.type}
+                      type="button"
+                      onClick={() => {
+                        handleMoodSelect(m.type);
+                        setIsMoodDropdownOpen(false);
+                      }}
+                      className={`w-full flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                        mood === m.type
+                          ? 'bg-stone-100 dark:bg-stone-800 text-stone-900 dark:text-stone-100'
+                          : 'text-stone-600 dark:text-stone-400 hover:bg-stone-50 dark:hover:bg-stone-800/50'
+                      }`}
+                    >
+                      <span className="text-sm">{m.emoji}</span>
+                      <span>{m.label}</span>
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         );
@@ -221,13 +262,6 @@ export const DiaryEditor: React.FC<DiaryEditorProps> = ({
         </div>
       )}
 
-      {/* Mood Selector Row */}
-      <div className="px-6 pt-4 pb-3 border-b border-stone-100 dark:border-stone-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-        <span className="text-xs font-semibold text-stone-700 dark:text-stone-300 shrink-0">
-          How did today feel?
-        </span>
-        <MoodSelector currentMood={mood} onSelectMood={handleMoodSelect} size="sm" />
-      </div>
 
       {/* Title Input */}
       <div className="px-6 pt-5 pb-2">
@@ -344,61 +378,77 @@ export const DiaryEditor: React.FC<DiaryEditorProps> = ({
         />
       </div>
 
-      {/* Tags Section */}
-      <div className="px-6 py-4 border-t border-stone-100 dark:border-stone-800 bg-stone-50/30 dark:bg-stone-900/30 space-y-2.5">
-        <div className="flex items-center gap-2 flex-wrap text-xs">
-          <TagIcon className="w-3.5 h-3.5 text-stone-400 shrink-0" />
-          <span className="font-semibold text-stone-600 dark:text-stone-400">Tags:</span>
+      {/* Tags Section and Footer */}
+      <div className="px-6 py-4 border-t border-stone-100 dark:border-stone-800 bg-stone-50/30 dark:bg-stone-900/30 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+        <div className="space-y-2.5 flex-1">
+          <div className="flex items-center gap-2 flex-wrap text-xs">
+            <TagIcon className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+            <span className="font-semibold text-stone-600 dark:text-stone-400">Tags:</span>
 
-          {tags.map((t) => (
-            <span
-              key={t}
-              className="inline-flex items-center gap-1 font-mono text-stone-700 dark:text-stone-300"
-            >
-              <span>{t}</span>
-              <button
-                type="button"
-                onClick={() => handleRemoveTag(t)}
-                className="text-stone-400 hover:text-stone-600 dark:hover:text-stone-200"
-                aria-label={`Remove tag ${t}`}
+            {tags.map((t) => (
+              <span
+                key={t}
+                className="inline-flex items-center gap-1 font-mono text-stone-700 dark:text-stone-300"
               >
-                <X className="w-3 h-3" />
-              </button>
-              <span aria-hidden="true" className="text-stone-300 dark:text-stone-700 ml-1">·</span>
-            </span>
-          ))}
+                <span>{t}</span>
+                <button
+                  type="button"
+                  onClick={() => handleRemoveTag(t)}
+                  className="text-stone-400 hover:text-stone-600 dark:hover:text-stone-200"
+                  aria-label={`Remove tag ${t}`}
+                >
+                  <X className="w-3 h-3" />
+                </button>
+                <span aria-hidden="true" className="text-stone-300 dark:text-stone-700 ml-1">·</span>
+              </span>
+            ))}
 
-          {/* Add custom tag */}
-          <div className="flex items-center gap-1">
-            <input
-              type="text"
-              value={tagInput}
-              onChange={(e) => setTagInput(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && tagInput.trim()) {
-                  e.preventDefault();
-                  handleAddTag(tagInput.trim());
-                }
-              }}
-              placeholder="+ add tag"
-              className="text-xs px-2 py-1 bg-transparent border-b border-stone-200 dark:border-stone-700 focus:outline-none focus:border-amber-600 text-stone-800 dark:text-stone-200 w-24"
-            />
+            {/* Add custom tag */}
+            <div className="flex items-center gap-1">
+              <input
+                type="text"
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && tagInput.trim()) {
+                    e.preventDefault();
+                    handleAddTag(tagInput.trim());
+                  }
+                }}
+                placeholder="+ add tag"
+                className="text-xs px-2 py-1 bg-transparent border-b border-stone-200 dark:border-stone-700 focus:outline-none focus:border-amber-600 text-stone-800 dark:text-stone-200 w-24"
+              />
+            </div>
+          </div>
+
+          {/* Suggested tags */}
+          <div className="flex items-center gap-1.5 flex-wrap text-[11px] text-stone-400 dark:text-stone-500">
+            <span>Suggestions:</span>
+            {SUGGESTED_TAGS.filter((st) => !tags.includes(st)).slice(0, 6).map((st) => (
+              <button
+                key={st}
+                type="button"
+                onClick={() => handleAddTag(st)}
+                className="hover:text-amber-600 dark:hover:text-amber-400 transition-colors"
+              >
+                {st}
+              </button>
+            ))}
           </div>
         </div>
 
-        {/* Suggested tags */}
-        <div className="flex items-center gap-1.5 flex-wrap text-[11px] text-stone-400 dark:text-stone-500">
-          <span>Suggestions:</span>
-          {SUGGESTED_TAGS.filter((st) => !tags.includes(st)).slice(0, 6).map((st) => (
-            <button
-              key={st}
-              type="button"
-              onClick={() => handleAddTag(st)}
-              className="hover:text-amber-600 dark:hover:text-amber-400 transition-colors"
-            >
-              {st}
-            </button>
-          ))}
+        {/* Save Button */}
+        <div className="shrink-0 flex items-center gap-3">
+          <div className="flex items-center gap-1.5 text-xs text-stone-400 dark:text-stone-500">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span>{lastSavedText}</span>
+          </div>
+          <button
+            onClick={handleManualSave}
+            className="px-4 py-2 bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 text-xs font-semibold rounded-lg hover:bg-stone-800 dark:hover:bg-white transition-colors"
+          >
+            Save Journal
+          </button>
         </div>
       </div>
     </div>

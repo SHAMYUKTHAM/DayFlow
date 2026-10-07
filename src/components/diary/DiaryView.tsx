@@ -66,42 +66,10 @@ export const DiaryView: React.FC<DiaryViewProps> = ({ onNavigateToHistory }) => 
       {/* Top Header: Automatically filled Day, Date, Year & Navigation Action */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-stone-200/80 dark:border-stone-800">
         <div>
-          {/* Prominent Auto-filled Date Banner */}
-          <div className="flex items-center gap-2 mb-1.5 flex-wrap">
-            <span className="px-2.5 py-0.5 rounded-lg bg-amber-100/80 dark:bg-amber-950/70 text-amber-900 dark:text-amber-200 text-xs font-mono font-semibold tracking-wide">
-              {dateParts.dayOfWeek}
-            </span>
-            <span className="text-xs font-mono text-stone-500 dark:text-stone-400">
-              {dateParts.monthName} {dateParts.dayNumber}, {dateParts.year}
-            </span>
-            <span className="text-[11px] px-2 py-0.5 rounded-full bg-stone-100 dark:bg-stone-800 text-stone-500 dark:text-stone-400">
-              Auto-filled · Today
-            </span>
-          </div>
-
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-stone-900 dark:text-stone-100 font-serif-heading">
             Today's Memories & Journal
           </h1>
-          <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400 mt-0.5">
-            Capture what actually happened, narrate your day, and reflect on what matters.
-          </p>
         </div>
-
-        {/* Link to Separate Past Entries Page */}
-        {onNavigateToHistory && (
-          <button
-            onClick={onNavigateToHistory}
-            className="inline-flex items-center gap-2 px-3.5 py-2 text-xs font-semibold text-stone-700 dark:text-stone-300 bg-white dark:bg-stone-900 hover:bg-stone-100 dark:hover:bg-stone-800 border border-stone-200 dark:border-stone-800 rounded-xl shadow-2xs transition-colors shrink-0"
-            title="Browse all past diary entries in a separate archives page"
-          >
-            <History className="w-3.5 h-3.5 text-amber-600" />
-            <span>Past Entries</span>
-            <span className="font-mono text-[11px] text-stone-400 tabular-nums">
-              ({pastEntriesCount})
-            </span>
-            <ArrowRight className="w-3 h-3 text-stone-400" />
-          </button>
-        )}
       </div>
 
       {/* Main Split Grid:
@@ -122,9 +90,6 @@ export const DiaryView: React.FC<DiaryViewProps> = ({ onNavigateToHistory }) => 
                   <h2 className="text-sm font-bold text-stone-900 dark:text-stone-100 font-serif-heading">
                     Your Day at a Glance
                   </h2>
-                  <p className="text-[11px] text-stone-500 dark:text-stone-400">
-                    What you planned & accomplished today
-                  </p>
                 </div>
               </div>
 
