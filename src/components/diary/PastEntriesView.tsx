@@ -79,18 +79,7 @@ export const PastEntriesView: React.FC<PastEntriesViewProps> = ({ onWriteToday }
           <h1 className="text-2xl font-bold tracking-tight text-stone-900 dark:text-stone-100 font-serif-heading">
             Past Journal Entries & Archives
           </h1>
-          <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">
-            Browse, search, and revisit your previous days and reflections.
-          </p>
         </div>
-
-        <button
-          onClick={onWriteToday}
-          className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-stone-900 dark:bg-stone-100 dark:text-stone-900 hover:bg-stone-800 dark:hover:bg-white rounded-xl shadow-xs transition-colors shrink-0"
-        >
-          <BookOpen className="w-4 h-4 text-amber-500" />
-          <span>Write Today's Memories</span>
-        </button>
       </div>
 
       {/* Search and Filters Bar */}
@@ -149,29 +138,13 @@ export const PastEntriesView: React.FC<PastEntriesViewProps> = ({ onWriteToday }
           </div>
         </div>
 
-        <div className="flex items-center justify-between text-xs text-stone-500 dark:text-stone-400 px-1 pt-1 border-t border-stone-100 dark:border-stone-800">
-          <span>
-            Showing <span className="font-semibold text-stone-800 dark:text-stone-200 font-mono tabular-nums">{filteredEntries.length}</span> past journal {filteredEntries.length === 1 ? 'entry' : 'entries'}
-          </span>
-          {(searchQuery || selectedMoodFilter !== 'all' || selectedTagFilter !== 'all') && (
-            <button
-              onClick={() => {
-                setSearchQuery('');
-                setSelectedMoodFilter('all');
-                setSelectedTagFilter('all');
-              }}
-              className="text-amber-700 dark:text-amber-400 hover:underline text-xs"
-            >
-              Reset filters
-            </button>
-          )}
-        </div>
+
       </div>
 
       {/* Two Column Layout: Entry Cards Grid & Full Reading Preview */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch lg:h-[calc(100vh-240px)] lg:min-h-[500px]">
         {/* Entries list (5 cols on lg) */}
-        <div className="lg:col-span-5 space-y-2.5 max-h-[720px] overflow-y-auto pr-1">
+        <div className="lg:col-span-5 space-y-2.5 overflow-y-auto pr-1 h-full pb-2">
           {filteredEntries.length > 0 ? (
             filteredEntries.map((entry) => {
               const isSelected = activeEntry?.id === entry.id;
@@ -234,7 +207,7 @@ export const PastEntriesView: React.FC<PastEntriesViewProps> = ({ onWriteToday }
         </div>
 
         {/* Reading Preview Panel (7 cols on lg) */}
-        <div className="lg:col-span-7 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl p-6 sm:p-8 shadow-2xs space-y-6">
+        <div className="lg:col-span-7 h-full overflow-y-auto bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl p-6 sm:p-8 shadow-2xs space-y-6">
           {activeEntry ? (
             <>
               {/* Auto-filled Date, Day, Year Header */}
