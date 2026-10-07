@@ -1,0 +1,6 @@
+{
+  "name": "DayFlow",
+  "description": "Plan your day, live your day, write your story, and reflect on your progress.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

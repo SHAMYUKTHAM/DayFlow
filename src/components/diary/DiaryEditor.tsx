@@ -1,0 +1,406 @@
+import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { MoodType, Task } from '../../types';
+import { useData } from '../../contexts/DataContext';
+import { MoodSelector } from '../common/MoodSelector';
+import { SUGGESTED_TAGS, formatDateLabel, getAutoFilledDateParts } from '../../utils/constants';
+import {
+  Bold,
+  Italic,
+  Heading1,
+  Heading2,
+  List,
+  ListOrdered,
+  Quote,
+  Undo,
+  Redo,
+  Check,
+  Tag as TagIcon,
+  X,
+  Plus,
+  Sparkles,
+  Calendar,
+  Clock,
+  BookOpen,
+} from 'lucide-react';
+
+interface DiaryEditorProps {
+  date: string;
+  initialTitle?: string;
+  initialContent?: string;
+  initialMood?: MoodType | null;
+  initialTags?: string[];
+  dayTasks?: Task[];
+  showInlineGlance?: boolean;
+  onDateChange?: (newDate: string) => void;
+}
+
+export const DiaryEditor: React.FC<DiaryEditorProps> = ({
+  date,
+  initialTitle = '',
+  initialContent = '',
+  initialMood = null,
+  initialTags = [],
+  dayTasks = [],
+  showInlineGlance = false,
+  onDateChange,
+}) => {
+  const { saveDiaryEntry, lastSavedText, showToast } = useData();
+
+  const [title, setTitle] = useState(initialTitle);
+  const [mood, setMood] = useState<MoodType | null>(initialMood);
+  const [tags, setTags] = useState<string[]>(initialTags);
+  const [tagInput, setTagInput] = useState('');
+  const [wordCount, setWordCount] = useState(0);
+
+  const editorRef = useRef<HTMLDivElement>(null);
+  const saveTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  // Sync state if date or props change
+  useEffect(() => {
+    setTitle(initialTitle || '');
+    setMood(initialMood || null);
+    setTags(initialTags || []);
+    if (editorRef.current) {
+      editorRef.current.innerHTML = initialContent || '<p>Tell your story...</p>';
+      calculateWords();
+    }
+  }, [date, initialTitle, initialContent, initialMood, initialTags]);
+
+  const calculateWords = () => {
+    if (!editorRef.current) return;
+    const text = editorRef.current.innerText || '';
+    const clean = text.replace(/Tell your story\.\.\./g, '').trim();
+    if (!clean) {
+      setWordCount(0);
+      return;
+    }
+    const words = clean.split(/\s+/).filter(Boolean);
+    setWordCount(words.length);
+  };
+
+  // Debounced auto-save
+  const triggerAutoSave = useCallback(() => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+
+    saveTimeoutRef.current = setTimeout(() => {
+      if (!editorRef.current) return;
+      const htmlContent = editorRef.current.innerHTML;
+      saveDiaryEntry(date, title.trim() || 'Daily Journal', htmlContent, mood, tags);
+    }, 1200);
+  }, [date, title, mood, tags, saveDiaryEntry]);
+
+  const handleContentInput = () => {
+    calculateWords();
+    triggerAutoSave();
+  };
+
+  const handleTitleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setTitle(e.target.value);
+    triggerAutoSave();
+  };
+
+  const handleMoodSelect = (newMood: MoodType) => {
+    const nextMood = mood === newMood ? null : newMood;
+    setMood(nextMood);
+    if (editorRef.current) {
+      saveDiaryEntry(date, title.trim() || 'Daily Journal', editorRef.current.innerHTML, nextMood, tags);
+    }
+  };
+
+  const handleAddTag = (tagToAdd: string) => {
+    const formatted = tagToAdd.startsWith('#') ? tagToAdd : `#${tagToAdd}`;
+    if (!tags.includes(formatted)) {
+      const nextTags = [...tags, formatted];
+      setTags(nextTags);
+      if (editorRef.current) {
+        saveDiaryEntry(date, title.trim() || 'Daily Journal', editorRef.current.innerHTML, mood, nextTags);
+      }
+    }
+    setTagInput('');
+  };
+
+  const handleRemoveTag = (tagToRemove: string) => {
+    const nextTags = tags.filter((t) => t !== tagToRemove);
+    setTags(nextTags);
+    if (editorRef.current) {
+      saveDiaryEntry(date, title.trim() || 'Daily Journal', editorRef.current.innerHTML, mood, nextTags);
+    }
+  };
+
+  // Rich text formatting actions
+  const formatDoc = (cmd: string, value: string | undefined = undefined) => {
+    document.execCommand(cmd, false, value);
+    if (editorRef.current) {
+      editorRef.current.focus();
+    }
+    handleContentInput();
+  };
+
+  // Completed tasks count
+  const completedTasks = dayTasks.filter((t) => t.status === 'completed');
+  const completionRate = dayTasks.length > 0 ? Math.round((completedTasks.length / dayTasks.length) * 100) : 0;
+
+  return (
+    <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl shadow-xs overflow-hidden">
+      {/* Top Header Bar: Auto-filled Date, Day, Year & Save Indicator */}
+      {(() => {
+        const dateParts = getAutoFilledDateParts(date);
+        return (
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between px-6 py-4 border-b border-stone-100 dark:border-stone-800 gap-3 bg-stone-50/50 dark:bg-stone-900/40">
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 flex flex-col items-center justify-center shrink-0 border border-amber-200/60 dark:border-amber-900/40">
+                <span className="text-[10px] uppercase font-mono font-bold leading-none">{dateParts.dayOfWeek.slice(0, 3)}</span>
+                <span className="text-sm font-mono font-bold leading-tight">{dateParts.dayNumber}</span>
+              </div>
+              <div>
+                <div className="flex items-center gap-2">
+                  <h2 className="text-sm sm:text-base font-semibold text-stone-900 dark:text-stone-100 font-serif-heading">
+                    {dateParts.dayOfWeek}, {dateParts.monthName} {dateParts.dayNumber}, {dateParts.year}
+                  </h2>
+                </div>
+                <div className="flex items-center gap-2 text-xs text-stone-500 dark:text-stone-400">
+                  <span className="text-amber-600 dark:text-amber-500 font-medium">Auto-filled</span>
+                  <span aria-hidden="true">·</span>
+                  <span>{wordCount} words</span>
+                  <span aria-hidden="true">·</span>
+                  <span>{Math.max(1, Math.ceil(wordCount / 200))} min read</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Autosave status */}
+            <div className="flex items-center gap-2 text-xs text-stone-400 dark:text-stone-500">
+              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span>{lastSavedText}</span>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* "Your Day at a Glance" — Smart Connection between Tasks and Diary */}
+      {showInlineGlance && dayTasks.length > 0 && (
+        <div className="px-6 py-4 bg-amber-50/40 dark:bg-stone-900/90 border-b border-stone-100 dark:border-stone-800/80">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-xs font-semibold uppercase tracking-wider text-amber-900/80 dark:text-amber-300">
+              Your Day at a Glance
+            </span>
+            <span className="text-xs font-mono font-medium text-stone-600 dark:text-stone-400 tabular-nums">
+              {completedTasks.length} / {dayTasks.length} completed ({completionRate}%)
+            </span>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+            {dayTasks.slice(0, 6).map((task) => (
+              <div
+                key={task.id}
+                className="flex items-center gap-2 py-1 px-2.5 rounded-lg bg-white/70 dark:bg-stone-800/50 border border-stone-200/50 dark:border-stone-700/40"
+              >
+                <span
+                  className={`w-3.5 h-3.5 rounded flex items-center justify-center shrink-0 text-[10px] ${
+                    task.status === 'completed'
+                      ? 'bg-amber-600 text-white'
+                      : 'border border-stone-300 dark:border-stone-600 text-transparent'
+                  }`}
+                >
+                  ✓
+                </span>
+                <span
+                  className={`truncate ${
+                    task.status === 'completed'
+                      ? 'line-through text-stone-400 dark:text-stone-500'
+                      : 'text-stone-700 dark:text-stone-300 font-medium'
+                  }`}
+                >
+                  {task.title}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Mood Selector Row */}
+      <div className="px-6 pt-4 pb-3 border-b border-stone-100 dark:border-stone-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <span className="text-xs font-semibold text-stone-700 dark:text-stone-300 shrink-0">
+          How did today feel?
+        </span>
+        <MoodSelector currentMood={mood} onSelectMood={handleMoodSelect} size="sm" />
+      </div>
+
+      {/* Title Input */}
+      <div className="px-6 pt-5 pb-2">
+        <input
+          type="text"
+          value={title}
+          onChange={handleTitleChange}
+          placeholder="Give today a title (e.g. A Productive Rhythm & Clear Progress)..."
+          className="w-full text-xl sm:text-2xl font-semibold tracking-tight text-stone-900 dark:text-stone-100 placeholder:text-stone-300 dark:placeholder:text-stone-600 bg-transparent border-none focus:outline-none font-serif-heading"
+        />
+      </div>
+
+      {/* Formatting Toolbar */}
+      <div className="px-6 py-2 border-y border-stone-100 dark:border-stone-800 flex items-center gap-1 flex-wrap bg-stone-50/30 dark:bg-stone-900/30">
+        <button
+          type="button"
+          onClick={() => formatDoc('bold')}
+          className="p-1.5 text-stone-600 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100 rounded-lg hover:bg-stone-200/50 dark:hover:bg-stone-800 transition-colors"
+          title="Bold (Ctrl+B)"
+        >
+          <Bold className="w-4 h-4" />
+        </button>
+        <button
+          type="button"
+          onClick={() => formatDoc('italic')}
+          className="p-1.5 text-stone-600 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100 rounded-lg hover:bg-stone-200/50 dark:hover:bg-stone-800 transition-colors"
+          title="Italic (Ctrl+I)"
+        >
+          <Italic className="w-4 h-4" />
+        </button>
+
+        <div className="w-px h-4 bg-stone-200 dark:bg-stone-800 mx-1" />
+
+        <button
+          type="button"
+          onClick={() => formatDoc('formatBlock', '<h1>')}
+          className="p-1.5 text-stone-600 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100 rounded-lg hover:bg-stone-200/50 dark:hover:bg-stone-800 transition-colors"
+          title="Large Heading"
+        >
+          <Heading1 className="w-4 h-4" />
+        </button>
+        <button
+          type="button"
+          onClick={() => formatDoc('formatBlock', '<h2>')}
+          className="p-1.5 text-stone-600 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100 rounded-lg hover:bg-stone-200/50 dark:hover:bg-stone-800 transition-colors"
+          title="Medium Heading"
+        >
+          <Heading2 className="w-4 h-4" />
+        </button>
+        <button
+          type="button"
+          onClick={() => formatDoc('formatBlock', '<p>')}
+          className="px-2 py-1 text-xs font-mono text-stone-600 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100 rounded-lg hover:bg-stone-200/50 dark:hover:bg-stone-800 transition-colors"
+          title="Body Paragraph"
+        >
+          P
+        </button>
+
+        <div className="w-px h-4 bg-stone-200 dark:bg-stone-800 mx-1" />
+
+        <button
+          type="button"
+          onClick={() => formatDoc('insertUnorderedList')}
+          className="p-1.5 text-stone-600 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100 rounded-lg hover:bg-stone-200/50 dark:hover:bg-stone-800 transition-colors"
+          title="Bullet List"
+        >
+          <List className="w-4 h-4" />
+        </button>
+        <button
+          type="button"
+          onClick={() => formatDoc('insertOrderedList')}
+          className="p-1.5 text-stone-600 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100 rounded-lg hover:bg-stone-200/50 dark:hover:bg-stone-800 transition-colors"
+          title="Numbered List"
+        >
+          <ListOrdered className="w-4 h-4" />
+        </button>
+        <button
+          type="button"
+          onClick={() => formatDoc('formatBlock', '<blockquote>')}
+          className="p-1.5 text-stone-600 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100 rounded-lg hover:bg-stone-200/50 dark:hover:bg-stone-800 transition-colors"
+          title="Quote Block"
+        >
+          <Quote className="w-4 h-4" />
+        </button>
+
+        <div className="w-px h-4 bg-stone-200 dark:bg-stone-800 mx-1" />
+
+        <button
+          type="button"
+          onClick={() => formatDoc('undo')}
+          className="p-1.5 text-stone-600 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100 rounded-lg hover:bg-stone-200/50 dark:hover:bg-stone-800 transition-colors"
+          title="Undo (Ctrl+Z)"
+        >
+          <Undo className="w-4 h-4" />
+        </button>
+        <button
+          type="button"
+          onClick={() => formatDoc('redo')}
+          className="p-1.5 text-stone-600 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100 rounded-lg hover:bg-stone-200/50 dark:hover:bg-stone-800 transition-colors"
+          title="Redo (Ctrl+Y)"
+        >
+          <Redo className="w-4 h-4" />
+        </button>
+      </div>
+
+      {/* Editor Surface */}
+      <div className="p-6">
+        <div
+          ref={editorRef}
+          contentEditable
+          onInput={handleContentInput}
+          onBlur={triggerAutoSave}
+          className="journal-content min-h-[320px] focus:outline-none text-stone-800 dark:text-stone-200 selection:bg-amber-100 dark:selection:bg-amber-950/60"
+        />
+      </div>
+
+      {/* Tags Section */}
+      <div className="px-6 py-4 border-t border-stone-100 dark:border-stone-800 bg-stone-50/30 dark:bg-stone-900/30 space-y-2.5">
+        <div className="flex items-center gap-2 flex-wrap text-xs">
+          <TagIcon className="w-3.5 h-3.5 text-stone-400 shrink-0" />
+          <span className="font-semibold text-stone-600 dark:text-stone-400">Tags:</span>
+
+          {tags.map((t) => (
+            <span
+              key={t}
+              className="inline-flex items-center gap-1 font-mono text-stone-700 dark:text-stone-300"
+            >
+              <span>{t}</span>
+              <button
+                type="button"
+                onClick={() => handleRemoveTag(t)}
+                className="text-stone-400 hover:text-stone-600 dark:hover:text-stone-200"
+                aria-label={`Remove tag ${t}`}
+              >
+                <X className="w-3 h-3" />
+              </button>
+              <span aria-hidden="true" className="text-stone-300 dark:text-stone-700 ml-1">·</span>
+            </span>
+          ))}
+
+          {/* Add custom tag */}
+          <div className="flex items-center gap-1">
+            <input
+              type="text"
+              value={tagInput}
+              onChange={(e) => setTagInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && tagInput.trim()) {
+                  e.preventDefault();
+                  handleAddTag(tagInput.trim());
+                }
+              }}
+              placeholder="+ add tag"
+              className="text-xs px-2 py-1 bg-transparent border-b border-stone-200 dark:border-stone-700 focus:outline-none focus:border-amber-600 text-stone-800 dark:text-stone-200 w-24"
+            />
+          </div>
+        </div>
+
+        {/* Suggested tags */}
+        <div className="flex items-center gap-1.5 flex-wrap text-[11px] text-stone-400 dark:text-stone-500">
+          <span>Suggestions:</span>
+          {SUGGESTED_TAGS.filter((st) => !tags.includes(st)).slice(0, 6).map((st) => (
+            <button
+              key={st}
+              type="button"
+              onClick={() => handleAddTag(st)}
+              className="hover:text-amber-600 dark:hover:text-amber-400 transition-colors"
+            >
+              {st}
+            </button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+};
