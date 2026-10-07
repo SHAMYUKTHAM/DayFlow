@@ -5,6 +5,7 @@ import { SpecialMomentModal } from './SpecialMomentModal';
 import { PhotoLightbox } from './PhotoLightbox';
 import { SpecialMoment, SpecialDayType } from '../../types';
 import {
+  Filter,
   ChevronLeft,
   ChevronRight,
   Sparkles,
@@ -67,6 +68,7 @@ export const CalendarView: React.FC = () => {
   const [momentFilter, setMomentFilter] = useState<
     'all' | 'special-only' | 'with-photos' | 'celebration' | 'milestone' | 'trip'
   >('all');
+  const [isFilterOpen, setIsFilterOpen] = useState(false);
 
   // Modals state
   const [isMomentModalOpen, setIsMomentModalOpen] = useState(false);
@@ -199,36 +201,52 @@ export const CalendarView: React.FC = () => {
       {/* Header: Focused on Special Days & Memorable Moments */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-stone-200/80 dark:border-stone-800">
         <div>
-          <div className="flex items-center gap-2 mb-1">
-            <span className="px-2.5 py-0.5 rounded-lg bg-amber-100 dark:bg-amber-950/70 text-amber-900 dark:text-amber-200 text-xs font-semibold flex items-center gap-1.5">
-              <Sparkles className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
-              Special Days & Memories
-            </span>
-            <span className="text-xs text-stone-400 font-mono">
-              {monthStats.specialDaysCount} Special Days · {monthStats.photosCount} Photos
-            </span>
-          </div>
-
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-stone-900 dark:text-stone-100 font-serif-heading">
             Special Moments Calendar
           </h1>
-          <p className="text-xs sm:text-sm text-stone-500 dark:text-stone-400 mt-0.5">
-            Mark special days, capture memorable reflections, and attach photos to remember forever.
-          </p>
         </div>
 
-        {/* Action Buttons: Add Moment & Month Navigator */}
-        <div className="flex flex-wrap items-center gap-2.5">
-          <button
-            onClick={() => {
-              setMomentToEdit(null);
-              setIsMomentModalOpen(true);
-            }}
-            className="inline-flex items-center gap-2 px-4 py-2 text-xs font-semibold text-white bg-amber-600 hover:bg-amber-700 rounded-xl shadow-xs transition-colors"
-          >
-            <Camera className="w-4 h-4" />
-            <span>Mark Special Moment / Photo</span>
-          </button>
+        {/* Action Buttons: Filter & Month Navigator */}
+        <div className="flex flex-wrap items-center gap-2.5 relative">
+          {/* Filter Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setIsFilterOpen(!isFilterOpen)}
+              className="inline-flex items-center gap-2 px-3 py-2 text-xs font-semibold text-stone-700 dark:text-stone-200 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 hover:bg-stone-50 dark:hover:bg-stone-800 rounded-xl shadow-2xs transition-colors"
+            >
+              <Filter className="w-4 h-4" />
+              <span>Filter</span>
+            </button>
+
+            {isFilterOpen && (
+              <div className="absolute right-0 mt-2 w-56 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl shadow-lg z-50 overflow-hidden">
+                <div className="py-1">
+                  {[
+                    { id: 'all', label: 'All Days', icon: null },
+                    { id: 'special-only', label: 'Special Days Only', icon: <Sparkles className="w-3.5 h-3.5 text-amber-500" /> },
+                    { id: 'with-photos', label: 'With Photos', icon: <Camera className="w-3.5 h-3.5 text-amber-500" /> },
+                    { id: 'celebration', label: '🎂 Birthdays & Celebrations', icon: null },
+                    { id: 'milestone', label: '🏆 Milestones', icon: null },
+                    { id: 'trip', label: '✈️ Trips', icon: null },
+                  ].map((f) => (
+                    <button
+                      key={f.id}
+                      onClick={() => {
+                        setMomentFilter(f.id as any);
+                        setIsFilterOpen(false);
+                      }}
+                      className={`w-full text-left px-4 py-2 text-xs flex items-center gap-2 hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors ${
+                        momentFilter === f.id ? 'bg-stone-50 dark:bg-stone-800/50 font-semibold' : ''
+                      }`}
+                    >
+                      {f.icon}
+                      <span>{f.label}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
 
           {/* Month Navigation Controls */}
           <div className="flex items-center gap-1 p-1 bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-xl shadow-2xs">
@@ -257,79 +275,6 @@ export const CalendarView: React.FC = () => {
         </div>
       </div>
 
-      {/* Filter Chips Bar */}
-      <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs no-scrollbar">
-        <span className="text-stone-400 text-[11px] font-semibold uppercase tracking-wider mr-1">
-          Filter:
-        </span>
-        <button
-          onClick={() => setMomentFilter('all')}
-          className={`px-3 py-1.5 rounded-xl font-medium transition-all ${
-            momentFilter === 'all'
-              ? 'bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 font-semibold'
-              : 'bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-50'
-          }`}
-        >
-          All Days
-        </button>
-
-        <button
-          onClick={() => setMomentFilter('special-only')}
-          className={`px-3 py-1.5 rounded-xl font-medium transition-all flex items-center gap-1.5 ${
-            momentFilter === 'special-only'
-              ? 'bg-amber-600 text-white font-semibold shadow-2xs'
-              : 'bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-50'
-          }`}
-        >
-          <Sparkles className="w-3.5 h-3.5 text-amber-500" />
-          <span>Special Days Only</span>
-        </button>
-
-        <button
-          onClick={() => setMomentFilter('with-photos')}
-          className={`px-3 py-1.5 rounded-xl font-medium transition-all flex items-center gap-1.5 ${
-            momentFilter === 'with-photos'
-              ? 'bg-amber-600 text-white font-semibold shadow-2xs'
-              : 'bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-50'
-          }`}
-        >
-          <Camera className="w-3.5 h-3.5 text-amber-500" />
-          <span>With Photos</span>
-        </button>
-
-        <button
-          onClick={() => setMomentFilter('celebration')}
-          className={`px-3 py-1.5 rounded-xl font-medium transition-all flex items-center gap-1.5 ${
-            momentFilter === 'celebration'
-              ? 'bg-purple-600 text-white font-semibold shadow-2xs'
-              : 'bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-50'
-          }`}
-        >
-          <span>🎂 Birthdays & Celebrations</span>
-        </button>
-
-        <button
-          onClick={() => setMomentFilter('milestone')}
-          className={`px-3 py-1.5 rounded-xl font-medium transition-all flex items-center gap-1.5 ${
-            momentFilter === 'milestone'
-              ? 'bg-emerald-600 text-white font-semibold shadow-2xs'
-              : 'bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-50'
-          }`}
-        >
-          <span>🏆 Milestones</span>
-        </button>
-
-        <button
-          onClick={() => setMomentFilter('trip')}
-          className={`px-3 py-1.5 rounded-xl font-medium transition-all flex items-center gap-1.5 ${
-            momentFilter === 'trip'
-              ? 'bg-sky-600 text-white font-semibold shadow-2xs'
-              : 'bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 text-stone-600 dark:text-stone-400 hover:bg-stone-50'
-          }`}
-        >
-          <span>✈️ Trips</span>
-        </button>
-      </div>
 
       {/* Main Grid: Calendar on Left (7 cols), Selected Day Moments Deep-Dive on Right (5 cols) */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
@@ -457,45 +402,30 @@ export const CalendarView: React.FC = () => {
             })}
           </div>
 
-          {/* Calendar Legend */}
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-3 mt-3 border-t border-stone-100 dark:border-stone-800 text-[11px] text-stone-500 dark:text-stone-400">
-            <div className="flex items-center gap-1.5">
-              <span className="w-3 h-3 rounded-md bg-amber-100 dark:bg-amber-950/70 border border-amber-300 dark:border-amber-700 flex items-center justify-center text-[8px]">
-                ✨
-              </span>
-              <span>Marked Special Day</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <Camera className="w-3.5 h-3.5 text-amber-600" />
-              <span>Photo Attached</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <span className="w-2.5 h-2.5 rounded-full bg-amber-600" />
-              <span>Today</span>
-            </div>
-            <div className="flex items-center gap-1.5">
-              <BookOpen className="w-3 h-3 text-stone-400" />
-              <span>Diary Written</span>
-            </div>
-          </div>
+
         </div>
 
         {/* Right Column: Selected Day Deep-Dive (Moments, Photos & Notes) (5 cols) */}
         <div className="lg:col-span-5 space-y-4">
           <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl p-5 shadow-2xs space-y-4">
-            {/* Date Headline & Special Day Tag */}
+            {/* Date Headline */}
             <div className="pb-3 border-b border-stone-100 dark:border-stone-800">
               <div className="flex items-center justify-between">
                 <span className="text-[11px] uppercase tracking-wider font-semibold text-stone-400 font-mono">
                   {selectedDate === today ? 'Today · Selected Date' : 'Selected Date'}
                 </span>
 
-                {selectedIsSpecialDay && (
-                  <span className="px-2.5 py-0.5 rounded-lg bg-amber-100 dark:bg-amber-950/70 text-amber-900 dark:text-amber-200 text-xs font-semibold flex items-center gap-1 border border-amber-200 dark:border-amber-800">
-                    <Sparkles className="w-3 h-3 text-amber-600" />
-                    Special Day
-                  </span>
-                )}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setMomentToEdit(null);
+                    setIsMomentModalOpen(true);
+                  }}
+                  className="px-2.5 py-1 rounded-lg border border-dashed border-amber-400 dark:border-amber-700 hover:border-amber-600 dark:hover:border-amber-500 bg-amber-50/40 dark:bg-amber-950/30 hover:bg-amber-50 dark:hover:bg-amber-950/50 text-amber-900 dark:text-amber-200 text-[11px] font-semibold flex items-center gap-1 transition-colors shadow-2xs"
+                >
+                  <Plus className="w-3 h-3 text-amber-600" />
+                  Mark Special Day
+                </button>
               </div>
 
               <h2 className="text-xl font-bold text-stone-900 dark:text-stone-100 font-serif-heading mt-1">
@@ -503,18 +433,6 @@ export const CalendarView: React.FC = () => {
               </h2>
             </div>
 
-            {/* Quick Action Button for Selected Day */}
-            <button
-              type="button"
-              onClick={() => {
-                setMomentToEdit(null);
-                setIsMomentModalOpen(true);
-              }}
-              className="w-full py-2.5 px-4 rounded-xl border border-dashed border-amber-400 dark:border-amber-700 hover:border-amber-600 dark:hover:border-amber-500 bg-amber-50/40 dark:bg-amber-950/30 hover:bg-amber-50 dark:hover:bg-amber-950/50 text-amber-900 dark:text-amber-200 text-xs font-semibold flex items-center justify-center gap-2 transition-colors shadow-2xs"
-            >
-              <Plus className="w-4 h-4 text-amber-600" />
-              <span>Mark Special Day / Add Note & Photo</span>
-            </button>
 
             {/* List of Special Moments & Photos on this date */}
             <div className="space-y-3">
@@ -640,25 +558,6 @@ export const CalendarView: React.FC = () => {
                 </div>
               )}
             </div>
-
-            {/* Context Accordion: Diary on this Date if written */}
-            {selectedOverview.diary?.content && (
-              <div className="pt-3 border-t border-stone-100 dark:border-stone-800 space-y-1.5">
-                <div className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wider text-stone-500">
-                  <BookOpen className="w-3.5 h-3.5 text-amber-600" />
-                  <span>Diary Written on this day</span>
-                </div>
-                <div className="p-3 rounded-xl bg-stone-50 dark:bg-stone-800/40 border border-stone-200/60 dark:border-stone-700/60 text-xs">
-                  <h4 className="font-semibold text-stone-900 dark:text-stone-100 mb-1">
-                    {selectedOverview.diary.title}
-                  </h4>
-                  <div
-                    className="text-stone-600 dark:text-stone-300 line-clamp-3 leading-relaxed font-serif text-[11px]"
-                    dangerouslySetInnerHTML={{ __html: selectedOverview.diary.content }}
-                  />
-                </div>
-              </div>
-            )}
           </div>
         </div>
       </div>
