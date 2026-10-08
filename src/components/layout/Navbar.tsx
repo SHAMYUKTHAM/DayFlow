@@ -33,20 +33,7 @@ export const Navbar: React.FC<NavbarProps> = ({
       <div className="max-w-7xl mx-auto px-4 sm:px-6 h-15 flex items-center justify-between">
         {/* Left: Sidebar toggle + Brand wordmark */}
         <div className="flex items-center gap-3">
-          {onToggleSidebar && (
-            <button
-              onClick={onToggleSidebar}
-              className="p-1.5 text-stone-500 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100 rounded-lg hover:bg-stone-100 dark:hover:bg-stone-800 transition-colors"
-              title={isSidebarExpanded ? 'Collapse sidebar (show icons only)' : 'Expand sidebar'}
-              aria-label="Toggle sidebar expansion"
-            >
-              {isSidebarExpanded ? (
-                <PanelLeftClose className="w-4 h-4" />
-              ) : (
-                <PanelLeftOpen className="w-4 h-4" />
-              )}
-            </button>
-          )}
+
 
           <button
             onClick={() => onSelectTab('dashboard')}

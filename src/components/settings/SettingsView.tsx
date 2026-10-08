@@ -19,9 +19,19 @@ export const SettingsView: React.FC<SettingsViewProps> = () => {
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
   const [bio, setBio] = useState(user?.bio || '');
-  const [defaultPriority, setDefaultPriority] = useState<Priority>(
-    user?.preferences?.defaultPriority || 'medium'
-  );
+  const [profileImage, setProfileImage] = useState(user?.profileImage || '');
+
+  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setProfileImage(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
 
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
@@ -29,9 +39,10 @@ export const SettingsView: React.FC<SettingsViewProps> = () => {
       name,
       email,
       bio,
+      profileImage,
       preferences: {
         theme: user?.preferences?.theme || 'light',
-        defaultPriority,
+        defaultPriority: user?.preferences?.defaultPriority || 'medium',
         enableSounds: user?.preferences?.enableSounds ?? true,
         autoSaveIntervalMs: 2000,
       },
@@ -42,21 +53,28 @@ export const SettingsView: React.FC<SettingsViewProps> = () => {
   return (
     <div className="max-w-4xl mx-auto space-y-8">
       {/* Header */}
-      <div className="pb-2 border-b border-stone-200/80 dark:border-stone-800">
+      <div className="pb-2">
         <h1 className="text-2xl font-bold tracking-tight text-stone-900 dark:text-stone-100 font-serif-heading">
           Settings & Preferences
         </h1>
-        <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">
-          Manage your personal profile and preferences.
-        </p>
       </div>
 
       {/* 1. Profile Settings */}
       <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl p-6 shadow-2xs space-y-5">
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-200 font-semibold flex items-center justify-center font-serif text-lg">
-            {name ? name.charAt(0).toUpperCase() : 'S'}
-          </div>
+        <div className="flex items-center gap-4">
+          <label className="relative group cursor-pointer w-14 h-14 rounded-full overflow-hidden bg-amber-100 dark:bg-amber-950/60 flex items-center justify-center flex-shrink-0 shadow-sm border border-stone-200 dark:border-stone-700">
+            {profileImage ? (
+              <img src={profileImage} alt="Profile" className="w-full h-full object-cover" />
+            ) : (
+              <span className="text-amber-800 dark:text-amber-200 font-semibold font-serif text-xl">
+                {name ? name.charAt(0).toUpperCase() : 'S'}
+              </span>
+            )}
+            <div className="absolute inset-0 bg-black/50 flex flex-col items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
+              <span className="text-white text-[10px] font-medium tracking-wider uppercase">Edit</span>
+            </div>
+            <input type="file" accept="image/*" className="hidden" onChange={handlePhotoUpload} />
+          </label>
           <div>
             <h2 className="text-base font-semibold text-stone-900 dark:text-stone-100">
               Personal Profile
@@ -107,27 +125,7 @@ export const SettingsView: React.FC<SettingsViewProps> = () => {
             />
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-stone-700 dark:text-stone-300 mb-1.5">
-              Default Task Priority
-            </label>
-            <div className="flex items-center gap-2">
-              {(['low', 'medium', 'high'] as Priority[]).map((p) => (
-                <button
-                  key={p}
-                  type="button"
-                  onClick={() => setDefaultPriority(p)}
-                  className={`px-3 py-1.5 text-xs font-medium rounded-lg capitalize border transition-all ${
-                    defaultPriority === p
-                      ? 'bg-amber-100 dark:bg-amber-950/80 border-amber-300 dark:border-amber-700 text-amber-900 dark:text-amber-200 font-semibold'
-                      : 'border-stone-200 dark:border-stone-700 text-stone-600 dark:text-stone-400'
-                  }`}
-                >
-                  {p}
-                </button>
-              ))}
-            </div>
-          </div>
+
 
           <div className="pt-2">
             <button

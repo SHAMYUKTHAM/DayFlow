@@ -64,7 +64,7 @@ export const DiaryView: React.FC<DiaryViewProps> = ({ onNavigateToHistory }) => 
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       {/* Top Header: Automatically filled Day, Date, Year & Navigation Action */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4 border-b border-stone-200/80 dark:border-stone-800">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-stone-900 dark:text-stone-100 font-serif-heading">
             Today's Memories & Journal

@@ -100,9 +100,6 @@ export const TasksView: React.FC = () => {
           <h1 className="text-2xl font-bold tracking-tight text-stone-900 dark:text-stone-100 font-serif-heading">
             Tasks & Action Items
           </h1>
-          <p className="text-sm text-stone-500 dark:text-stone-400 mt-1">
-            Structure what you need to accomplish and maintain daily momentum.
-          </p>
         </div>
       </div>
 

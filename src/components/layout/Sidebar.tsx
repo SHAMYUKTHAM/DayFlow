@@ -7,9 +7,9 @@ import {
   BookOpen,
   Calendar,
   Settings,
-  PanelLeftClose,
-  PanelLeftOpen,
+  Menu,
   History,
+  User,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -58,8 +58,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
     },
     {
       tab: 'settings',
-      label: 'Settings',
-      icon: <Settings className="w-5 h-5 shrink-0" />,
+      label: 'Profile',
+      icon: <User className="w-5 h-5 shrink-0" />,
     },
   ];
 
@@ -71,23 +71,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
     >
       <div className="space-y-4">
         {/* Toggle Expand/Collapse Header Button */}
-        <div className={`flex items-center ${isExpanded ? 'justify-between px-2' : 'justify-center'} pb-1`}>
-          {isExpanded && (
-            <span className="text-[11px] font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500 font-mono">
-              Menu
-            </span>
-          )}
+        <div className="flex items-center justify-start px-2 pb-1">
           <button
             onClick={onToggleExpand}
             className="p-2 text-stone-500 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100 rounded-xl hover:bg-stone-200/60 dark:hover:bg-stone-800 transition-colors"
-            title={isExpanded ? 'Collapse to icon-only mode' : 'Expand sidebar to show labels'}
+            title={isExpanded ? 'Collapse sidebar' : 'Expand sidebar'}
             aria-label="Toggle sidebar collapse"
           >
-            {isExpanded ? (
-              <PanelLeftClose className="w-4 h-4" />
-            ) : (
-              <PanelLeftOpen className="w-4 h-4" />
-            )}
+            <Menu className="w-5 h-5" />
           </button>
         </div>
 
@@ -136,30 +127,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </nav>
       </div>
 
-      {/* User profile footer */}
-      <div className="pt-3 border-t border-stone-200/80 dark:border-stone-800">
-        <button
-          onClick={() => onSelectTab('settings')}
-          title={`Profile & Settings: ${user?.name || 'Shamyuktha'}`}
-          className={`flex items-center rounded-xl hover:bg-stone-100 dark:hover:bg-stone-900 transition-colors ${
-            isExpanded ? 'w-full gap-3 p-1.5 text-left' : 'w-11 h-11 mx-auto justify-center'
-          }`}
-        >
-          <div className="w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-950/80 text-amber-900 dark:text-amber-200 flex items-center justify-center text-xs font-semibold font-serif shrink-0 ring-1 ring-stone-200 dark:ring-stone-800">
-            {user?.name ? user.name.charAt(0).toUpperCase() : 'S'}
-          </div>
-          {isExpanded && (
-            <div className="min-w-0 flex-1">
-              <p className="text-xs font-semibold text-stone-900 dark:text-stone-100 truncate">
-                {user?.name || 'Shamyuktha'}
-              </p>
-              <p className="text-[11px] text-stone-500 dark:text-stone-400 truncate">
-                {user?.role || 'Student & Developer'}
-              </p>
-            </div>
-          )}
-        </button>
-      </div>
+
     </aside>
   );
 };
