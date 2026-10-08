@@ -156,7 +156,7 @@ export const DiaryEditor: React.FC<DiaryEditorProps> = ({
   const completionRate = dayTasks.length > 0 ? Math.round((completedTasks.length / dayTasks.length) * 100) : 0;
 
   return (
-    <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl shadow-xs overflow-hidden">
+    <div className="h-full flex flex-col bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl shadow-xs overflow-hidden">
       {/* Top Header Bar: Auto-filled Date, Day, Year & Save Indicator */}
       {(() => {
         const dateParts = getAutoFilledDateParts(date);
@@ -368,81 +368,20 @@ export const DiaryEditor: React.FC<DiaryEditorProps> = ({
       </div>
 
       {/* Editor Surface */}
-      <div className="p-6">
+      <div className="p-6 flex-1 flex flex-col">
         <div
           ref={editorRef}
           contentEditable
           onInput={handleContentInput}
           onBlur={triggerAutoSave}
-          className="journal-content min-h-[320px] focus:outline-none text-stone-800 dark:text-stone-200 selection:bg-amber-100 dark:selection:bg-amber-950/60"
+          className="journal-content flex-1 min-h-[320px] focus:outline-none text-stone-800 dark:text-stone-200 selection:bg-amber-100 dark:selection:bg-amber-950/60"
         />
       </div>
 
-      {/* Tags Section and Footer */}
-      <div className="px-6 py-4 border-t border-stone-100 dark:border-stone-800 bg-stone-50/30 dark:bg-stone-900/30 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-        <div className="space-y-2.5 flex-1">
-          <div className="flex items-center gap-2 flex-wrap text-xs">
-            <TagIcon className="w-3.5 h-3.5 text-stone-400 shrink-0" />
-            <span className="font-semibold text-stone-600 dark:text-stone-400">Tags:</span>
-
-            {tags.map((t) => (
-              <span
-                key={t}
-                className="inline-flex items-center gap-1 font-mono text-stone-700 dark:text-stone-300"
-              >
-                <span>{t}</span>
-                <button
-                  type="button"
-                  onClick={() => handleRemoveTag(t)}
-                  className="text-stone-400 hover:text-stone-600 dark:hover:text-stone-200"
-                  aria-label={`Remove tag ${t}`}
-                >
-                  <X className="w-3 h-3" />
-                </button>
-                <span aria-hidden="true" className="text-stone-300 dark:text-stone-700 ml-1">·</span>
-              </span>
-            ))}
-
-            {/* Add custom tag */}
-            <div className="flex items-center gap-1">
-              <input
-                type="text"
-                value={tagInput}
-                onChange={(e) => setTagInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' && tagInput.trim()) {
-                    e.preventDefault();
-                    handleAddTag(tagInput.trim());
-                  }
-                }}
-                placeholder="+ add tag"
-                className="text-xs px-2 py-1 bg-transparent border-b border-stone-200 dark:border-stone-700 focus:outline-none focus:border-amber-600 text-stone-800 dark:text-stone-200 w-24"
-              />
-            </div>
-          </div>
-
-          {/* Suggested tags */}
-          <div className="flex items-center gap-1.5 flex-wrap text-[11px] text-stone-400 dark:text-stone-500">
-            <span>Suggestions:</span>
-            {SUGGESTED_TAGS.filter((st) => !tags.includes(st)).slice(0, 6).map((st) => (
-              <button
-                key={st}
-                type="button"
-                onClick={() => handleAddTag(st)}
-                className="hover:text-amber-600 dark:hover:text-amber-400 transition-colors"
-              >
-                {st}
-              </button>
-            ))}
-          </div>
-        </div>
-
+      {/* Footer / Save Button */}
+      <div className="px-6 py-4 border-t border-stone-100 dark:border-stone-800 bg-stone-50/30 dark:bg-stone-900/30 flex justify-end">
         {/* Save Button */}
         <div className="shrink-0 flex items-center gap-3">
-          <div className="flex items-center gap-1.5 text-xs text-stone-400 dark:text-stone-500">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-            <span>{lastSavedText}</span>
-          </div>
           <button
             onClick={handleManualSave}
             className="px-4 py-2 bg-stone-900 dark:bg-stone-100 text-white dark:text-stone-900 text-xs font-semibold rounded-lg hover:bg-stone-800 dark:hover:bg-white transition-colors"

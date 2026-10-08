@@ -76,10 +76,10 @@ export const DiaryView: React.FC<DiaryViewProps> = ({ onNavigateToHistory }) => 
           - Left: "Your Day at a Glance" separate card (like the left card in past entries)
           - Right: Today's Diary Editor card
       */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
         {/* Left Column (5 cols on lg): "Your Day at a Glance" Card */}
-        <div className="lg:col-span-5 space-y-4">
-          <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl p-5 shadow-2xs space-y-4">
+        <div className="lg:col-span-5 h-full">
+          <div className="h-full bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl p-5 shadow-2xs flex flex-col space-y-4">
             {/* Glance Header */}
             <div className="flex items-center justify-between pb-3 border-b border-stone-100 dark:border-stone-800">
               <div className="flex items-center gap-2.5">
@@ -158,7 +158,7 @@ export const DiaryView: React.FC<DiaryViewProps> = ({ onNavigateToHistory }) => 
             </div>
 
             {/* Tasks Interactive Checklist */}
-            <div className="space-y-1.5 max-h-[380px] overflow-y-auto pr-1">
+            <div className="space-y-1.5 flex-1 overflow-y-auto pr-1">
               {displayedTasks.length > 0 ? (
                 displayedTasks.map((task) => {
                   const isDone = task.status === 'completed';
@@ -219,31 +219,11 @@ export const DiaryView: React.FC<DiaryViewProps> = ({ onNavigateToHistory }) => 
               )}
             </div>
 
-            {/* Today's Highlights (if any) */}
-            {todayHighlights.length > 0 && (
-              <div className="pt-3 border-t border-stone-100 dark:border-stone-800 space-y-2 text-xs">
-                <div className="flex items-center gap-1.5 font-semibold uppercase tracking-wider text-stone-500 text-[10px]">
-                  <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
-                  <span>Today's Highlights</span>
-                </div>
-                <div className="space-y-1">
-                  {todayHighlights.map((h) => (
-                    <div
-                      key={h.id}
-                      className="flex items-center gap-2 p-2 rounded-lg bg-amber-50/50 dark:bg-amber-950/30 text-stone-700 dark:text-stone-300 text-[11px]"
-                    >
-                      <span>⭐</span>
-                      <span className="truncate">{h.text}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         </div>
 
         {/* Right Column (7 cols on lg): Today's Diary Editor ("A Productive Rhythm & Clear Progress" card) */}
-        <div className="lg:col-span-7">
+        <div className="lg:col-span-7 h-full">
           <DiaryEditor
             key={today}
             date={today}
