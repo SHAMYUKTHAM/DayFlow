@@ -30,7 +30,7 @@ export const Navbar: React.FC<NavbarProps> = ({
 
   return (
     <header className="sticky top-0 z-40 bg-stone-50/90 dark:bg-stone-950/90 backdrop-blur-md border-b border-stone-200/80 dark:border-stone-800">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 h-15 flex items-center justify-between">
+      <div className="w-full px-4 sm:px-6 h-15 flex items-center justify-between">
         {/* Left: Sidebar toggle + Brand wordmark */}
         <div className="flex items-center gap-3">
 

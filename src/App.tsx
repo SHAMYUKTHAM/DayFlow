@@ -69,7 +69,7 @@ function MainApp() {
       />
 
       {/* Main Body Layout */}
-      <div className="flex-1 flex max-w-7xl w-full mx-auto pb-16 md:pb-6">
+      <div className="flex-1 flex w-full pb-16 md:pb-6">
         {/* Desktop / Tablet Sidebar (Icon-only by default, expands on toggle) */}
         <div className="hidden md:block">
           <Sidebar

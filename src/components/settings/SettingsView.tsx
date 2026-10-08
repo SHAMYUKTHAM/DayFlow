@@ -51,7 +51,7 @@ export const SettingsView: React.FC<SettingsViewProps> = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto space-y-8">
+    <div className="w-full mx-auto space-y-8">
       {/* Header */}
       <div className="pb-2">
         <h1 className="text-2xl font-bold tracking-tight text-stone-900 dark:text-stone-100 font-serif-heading">

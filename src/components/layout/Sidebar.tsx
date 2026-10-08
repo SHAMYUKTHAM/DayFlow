@@ -84,12 +84,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {/* Navigation List */}
         <nav className="space-y-1">
-          {isExpanded && (
-            <p className="px-2.5 text-[10px] font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500 mb-1.5 font-mono">
-              Navigation
-            </p>
-          )}
-
           {navItems.map((item) => {
             const isActive = activeTab === item.tab;
             return (
@@ -109,17 +103,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
               >
                 <span>{item.icon}</span>
 
-                {isExpanded ? (
-                  <>
-                    <span className="truncate">{item.label}</span>
-                    {item.isPrimary && (
-                      <span className="ml-auto w-1.5 h-1.5 rounded-full bg-amber-600 dark:bg-amber-500" />
-                    )}
-                  </>
-                ) : (
-                  isActive && (
-                    <span className="absolute right-1.5 top-1.5 w-1.5 h-1.5 rounded-full bg-amber-600 dark:bg-amber-500" />
-                  )
+                {isExpanded && (
+                  <span className="truncate">{item.label}</span>
                 )}
               </button>
             );
