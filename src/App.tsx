@@ -25,7 +25,7 @@ import { getTodayDateString } from './utils/constants';
 function MainApp() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
-  const [isLandingView, setIsLandingView] = useState(false);
+  const [isLandingView, setIsLandingView] = useState(true);
   const [isSidebarExpanded, setIsSidebarExpanded] = useState<boolean>(() => {
     const saved = localStorage.getItem('dayflow_sidebar_expanded');
     return saved === 'true'; // Default is false (icon-only mode)
