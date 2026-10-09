@@ -25,7 +25,28 @@ import { getTodayDateString } from './utils/constants';
 function MainApp() {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState<ActiveTab>('dashboard');
-  const [isLandingView, setIsLandingView] = useState(true);
+  const [isLandingView, setIsLandingView] = useState(() => {
+    return window.location.hash !== '#app';
+  });
+
+  React.useEffect(() => {
+    if (isLandingView) {
+      if (window.location.hash === '#app') {
+        window.history.replaceState(null, '', ' '); // clean up hash visually
+      }
+    } else {
+      window.location.hash = '#app';
+    }
+  }, [isLandingView]);
+
+  React.useEffect(() => {
+    const handleHashChange = () => {
+      setIsLandingView(window.location.hash !== '#app');
+    };
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, []);
+
   const [isSidebarExpanded, setIsSidebarExpanded] = useState<boolean>(() => {
     const saved = localStorage.getItem('dayflow_sidebar_expanded');
     return saved === 'true'; // Default is false (icon-only mode)

@@ -60,7 +60,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onExplor
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('signup');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { login } = useAuth();
+  const { login, isAuthenticated } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -98,6 +98,14 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onExplor
   const openAuthModal = (mode: 'login' | 'signup') => {
     setAuthMode(mode);
     setIsAuthModalOpen(true);
+  };
+
+  const handleLetsTrack = () => {
+    if (isAuthenticated) {
+      onGetStarted();
+    } else {
+      openAuthModal('signup');
+    }
   };
 
   return (
@@ -187,7 +195,7 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onExplor
           <FadeIn delay={300}>
             <div className="flex flex-col sm:flex-row items-center justify-center gap-4 pt-4">
               <button
-                onClick={onGetStarted}
+                onClick={handleLetsTrack}
                 className="w-full sm:w-auto px-8 py-4 text-base font-semibold text-white bg-stone-900 hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-white rounded-2xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all flex items-center justify-center gap-2"
               >
                 Let's Track
