@@ -9,12 +9,15 @@ import {
   Mail,
   ChevronRight,
   Menu,
-  X
+  X,
+  Lock,
+  User as UserIcon,
 } from 'lucide-react';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface LandingPageProps {
   onGetStarted: () => void;
-  onExploreDemo: () => void; // Unused but kept for compatibility
+  onExploreDemo: () => void;
 }
 
 const useIntersectionObserver = (options = {}) => {
@@ -50,9 +53,14 @@ const FadeIn: React.FC<{ children: React.ReactNode; delay?: number }> = ({ child
   );
 };
 
-export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
+export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onExploreDemo }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
+  const [authMode, setAuthMode] = useState<'login' | 'signup'>('signup');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const { login } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -76,11 +84,27 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
     }
   };
 
+  const handleAuthSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email || !password) return;
+    
+    // In this mock application, any password is accepted.
+    // It creates or logs in a mock user based on the email.
+    login(email);
+    setIsAuthModalOpen(false);
+    onGetStarted();
+  };
+
+  const openAuthModal = (mode: 'login' | 'signup') => {
+    setAuthMode(mode);
+    setIsAuthModalOpen(true);
+  };
+
   return (
-    <div className="min-h-screen bg-[#FAFAFA] dark:bg-stone-950 text-stone-900 dark:text-stone-100 font-sans overflow-x-hidden">
+    <div className="min-h-screen bg-[#FAFAFA] dark:bg-stone-950 text-stone-900 dark:text-stone-100 font-sans overflow-x-hidden relative">
       {/* Navigation */}
       <header
-        className={`fixed top-0 w-full z-50 transition-all duration-300 ${
+        className={`fixed top-0 w-full z-40 transition-all duration-300 ${
           isScrolled 
             ? 'bg-white/80 dark:bg-stone-950/80 backdrop-blur-md border-b border-stone-200/50 dark:border-stone-800' 
             : 'bg-transparent'
@@ -105,11 +129,12 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
             <button onClick={() => scrollToSection('about')} className="text-sm font-medium text-stone-600 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100 transition-colors">About</button>
             <button onClick={() => scrollToSection('how-it-works')} className="text-sm font-medium text-stone-600 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100 transition-colors">How It Works</button>
             <button onClick={() => scrollToSection('contact')} className="text-sm font-medium text-stone-600 hover:text-stone-900 dark:text-stone-400 dark:hover:text-stone-100 transition-colors">Contact</button>
+            
             <button
-              onClick={onGetStarted}
+              onClick={() => openAuthModal('signup')}
               className="px-5 py-2.5 text-sm font-semibold text-white bg-stone-900 hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-white rounded-xl shadow-sm hover:shadow-md transition-all flex items-center gap-2"
             >
-              Let's Track
+              Sign Up
             </button>
           </nav>
 
@@ -131,10 +156,13 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
             <button onClick={() => scrollToSection('how-it-works')} className="text-left py-2 font-medium">How It Works</button>
             <button onClick={() => scrollToSection('contact')} className="text-left py-2 font-medium">Contact</button>
             <button
-              onClick={onGetStarted}
+              onClick={() => {
+                setIsMobileMenuOpen(false);
+                openAuthModal('signup');
+              }}
               className="mt-2 py-3 w-full justify-center text-sm font-semibold text-white bg-stone-900 dark:bg-stone-100 dark:text-stone-900 rounded-xl flex items-center gap-2"
             >
-              Let's Track
+              Sign Up
             </button>
           </div>
         )}
@@ -436,6 +464,99 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted }) => {
           </div>
         </div>
       </footer>
+
+      {/* AUTHENTICATION MODAL */}
+      {isAuthModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div 
+            className="absolute inset-0 bg-stone-900/40 backdrop-blur-sm"
+            onClick={() => setIsAuthModalOpen(false)}
+          ></div>
+          <div className="relative bg-white dark:bg-stone-900 rounded-3xl p-8 max-w-md w-full shadow-2xl border border-stone-200 dark:border-stone-800 animate-in fade-in zoom-in duration-200">
+            <button 
+              onClick={() => setIsAuthModalOpen(false)}
+              className="absolute top-6 right-6 text-stone-400 hover:text-stone-600 dark:hover:text-stone-200 transition-colors"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            <div className="text-center mb-8">
+              <div className="w-12 h-12 bg-amber-100 dark:bg-amber-900/30 text-amber-600 dark:text-amber-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+                <Lock className="w-6 h-6" />
+              </div>
+              <h3 className="text-2xl font-bold font-serif-heading text-stone-900 dark:text-stone-100">
+                {authMode === 'login' ? 'Welcome Back' : 'Create Account'}
+              </h3>
+              <p className="text-sm text-stone-500 dark:text-stone-400 mt-2">
+                {authMode === 'login' 
+                  ? 'Enter your credentials to access your DayFlow.' 
+                  : 'Start your journey with DayFlow today.'}
+              </p>
+            </div>
+
+            <form onSubmit={handleAuthSubmit} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-stone-700 dark:text-stone-300">Email Address</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-stone-400">
+                    <UserIcon className="w-4 h-4" />
+                  </div>
+                  <input
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="w-full pl-10 pr-4 py-2.5 bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/50 dark:text-stone-100 text-sm"
+                    placeholder="you@example.com"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium text-stone-700 dark:text-stone-300">Password</label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-stone-400">
+                    <Lock className="w-4 h-4" />
+                  </div>
+                  <input
+                    type="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="w-full pl-10 pr-4 py-2.5 bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/50 dark:text-stone-100 text-sm"
+                    placeholder="••••••••"
+                  />
+                </div>
+              </div>
+
+              <button
+                type="submit"
+                className="w-full mt-2 py-3 bg-stone-900 hover:bg-stone-800 dark:bg-stone-100 dark:text-stone-900 dark:hover:bg-white text-white rounded-xl text-sm font-semibold shadow-sm transition-colors"
+              >
+                {authMode === 'login' ? 'Sign In' : 'Sign Up'}
+              </button>
+            </form>
+
+            <div className="mt-6 text-center text-sm text-stone-500">
+              {authMode === 'login' ? (
+                <p>
+                  Don't have an account?{' '}
+                  <button onClick={() => setAuthMode('signup')} className="font-semibold text-stone-900 dark:text-stone-200 hover:underline">
+                    Sign up
+                  </button>
+                </p>
+              ) : (
+                <p>
+                  Already have an account?{' '}
+                  <button onClick={() => setAuthMode('login')} className="font-semibold text-stone-900 dark:text-stone-200 hover:underline">
+                    Log in
+                  </button>
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
