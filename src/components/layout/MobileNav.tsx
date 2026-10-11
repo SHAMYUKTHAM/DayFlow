@@ -6,6 +6,7 @@ import {
   BookOpen,
   Calendar,
   History,
+  Bell,
 } from 'lucide-react';
 
 interface MobileNavProps {
@@ -18,7 +19,7 @@ export const MobileNav: React.FC<MobileNavProps> = ({ activeTab, onSelectTab }) 
     { tab: 'dashboard', label: 'Home', icon: <LayoutDashboard className="w-4 h-4" /> },
     { tab: 'tasks', label: 'Tasks', icon: <CheckSquare className="w-4 h-4" /> },
     { tab: 'diary', label: 'Diary', icon: <BookOpen className="w-4 h-4" /> },
-    { tab: 'past-entries', label: 'Past', icon: <History className="w-4 h-4" /> },
+    { tab: 'reminders', label: 'Remind', icon: <Bell className="w-4 h-4" /> },
     { tab: 'calendar', label: 'Calendar', icon: <Calendar className="w-4 h-4" /> },
   ];
 

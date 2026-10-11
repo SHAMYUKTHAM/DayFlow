@@ -7,6 +7,7 @@ import {
   DailyReflection,
   DayStreakStats,
   DiaryEntry,
+  DiaryReminder,
   MoodType,
   Priority,
   SpecialMoment,
@@ -69,6 +70,14 @@ interface DataContextType {
   deleteSpecialMoment: (id: string) => void;
   getSpecialMomentsForDate: (date: string) => SpecialMoment[];
   isDateSpecialDay: (date: string) => boolean;
+
+  // Remained Me (Diary Reminders)
+  diaryReminders: DiaryReminder[];
+  addDiaryReminder: (reminder: Omit<DiaryReminder, 'id' | 'userId' | 'createdAt' | 'updatedAt' | 'completed'>) => Promise<DiaryReminder>;
+  updateDiaryReminder: (id: string, updates: Partial<DiaryReminder>) => Promise<void>;
+  deleteDiaryReminder: (id: string) => Promise<void>;
+  toggleDiaryReminderCompletion: (id: string) => Promise<void>;
+  requestNotificationPermission: () => Promise<boolean>;
 
   // Categories & Tags
   categories: Category[];
@@ -177,6 +186,44 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return DEFAULT_CATEGORIES;
   });
 
+  // Remained Me (Diary Reminders) state
+  const [diaryReminders, setDiaryReminders] = useState<DiaryReminder[]>(() => {
+    const saved = localStorage.getItem('dayflow_diary_reminders');
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Failed to parse diary reminders', e);
+      }
+    }
+    return [
+      {
+        id: 'sample-rem-1',
+        userId: currentUserId,
+        title: 'Complete my project report',
+        date: getTodayDateString(),
+        time: '20:00',
+        notes: 'Finalize methodology, review test results, and export PDF.',
+        repeat: 'daily',
+        completed: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+      {
+        id: 'sample-rem-2',
+        userId: currentUserId,
+        title: 'Write evening diary reflection',
+        date: getTodayDateString(),
+        time: '21:30',
+        notes: 'Recall 3 positive moments from today before sleeping.',
+        repeat: 'daily',
+        completed: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+    ];
+  });
+
   // Toasts
   const [toasts, setToasts] = useState<ToastMessage[]>([]);
   const [lastSavedTimestamp, setLastSavedTimestamp] = useState<Date | null>(new Date());
@@ -206,6 +253,26 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     localStorage.setItem('dayflow_categories', JSON.stringify(categories));
   }, [categories]);
+
+  useEffect(() => {
+    localStorage.setItem('dayflow_diary_reminders', JSON.stringify(diaryReminders));
+  }, [diaryReminders]);
+
+  // Sync diary reminders from server on user mount
+  useEffect(() => {
+    if (!user) return;
+    fetch(`/api/diary-reminders?userId=${user.id}`)
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.success && Array.isArray(data.reminders) && data.reminders.length > 0) {
+          // Merge server reminders with local state (server has priority for user's own items)
+          setDiaryReminders(data.reminders);
+        }
+      })
+      .catch((err) => {
+        console.warn('Could not sync reminders from server, using local storage:', err);
+      });
+  }, [user]);
 
   // Dynamic "Last saved" text updater
   useEffect(() => {
@@ -864,6 +931,199 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
     [user, tasks, diaryEntries, reflections, highlights, categories, showToast]
   );
 
+  // Browser Notification Permission Requester
+  const requestNotificationPermission = useCallback(async (): Promise<boolean> => {
+    if (!('Notification' in window)) {
+      showToast('Notifications are not supported in this browser', 'info');
+      return false;
+    }
+    if (Notification.permission === 'granted') {
+      return true;
+    }
+    if (Notification.permission !== 'denied') {
+      const permission = await Notification.requestPermission();
+      if (permission === 'granted') {
+        showToast('✓ Browser notifications enabled for reminders!', 'success');
+        return true;
+      }
+    }
+    showToast('Notification permission was not granted', 'warning');
+    return false;
+  }, [showToast]);
+
+  // Periodic Reminder Checker (Alarm-like behavior for due reminders)
+  useEffect(() => {
+    const checkReminders = () => {
+      const now = new Date();
+      const currentHours = String(now.getHours()).padStart(2, '0');
+      const currentMinutes = String(now.getMinutes()).padStart(2, '0');
+      const currentTimeStr = `${currentHours}:${currentMinutes}`;
+      const todayDateStr = now.toISOString().slice(0, 10);
+      const todayMinuteKey = `${todayDateStr}T${currentTimeStr}`;
+
+      diaryReminders.forEach((rem) => {
+        if (rem.completed) return;
+
+        // Check if reminder is due today (or recurring)
+        let isDueToday = false;
+        if (rem.date === todayDateStr) {
+          isDueToday = true;
+        } else if (rem.repeat === 'daily') {
+          isDueToday = true;
+        } else if (rem.repeat === 'weekly') {
+          const remDay = new Date(rem.date + 'T00:00:00').getDay();
+          if (now.getDay() === remDay) isDueToday = true;
+        } else if (rem.repeat === 'monthly') {
+          const remDateNum = new Date(rem.date + 'T00:00:00').getDate();
+          if (now.getDate() === remDateNum) isDueToday = true;
+        }
+
+        // Compare time (normalized 24-hr)
+        let remTimeFormatted = rem.time;
+        if (remTimeFormatted.includes('AM') || remTimeFormatted.includes('PM')) {
+          // Normalize if saved with AM/PM
+          const [timePart, modifier] = remTimeFormatted.split(' ');
+          let [hours, minutes] = timePart.split(':');
+          if (modifier === 'PM' && hours !== '12') hours = String(parseInt(hours, 10) + 12);
+          if (modifier === 'AM' && hours === '12') hours = '00';
+          remTimeFormatted = `${hours.padStart(2, '0')}:${minutes.padStart(2, '0')}`;
+        }
+
+        if (isDueToday && remTimeFormatted === currentTimeStr && rem.lastTriggeredAt !== todayMinuteKey) {
+          // Trigger reminder!
+          rem.lastTriggeredAt = todayMinuteKey;
+
+          // 1. In-app toast notification with sound/alert
+          showToast(`⏰ REMINDER: ${rem.title}${rem.notes ? ' - ' + rem.notes : ''}`, 'info');
+
+          // 2. Browser native desktop push notification
+          if ('Notification' in window && Notification.permission === 'granted') {
+            try {
+              new Notification(`Remained Me: ${rem.title}`, {
+                body: rem.notes ? `${rem.notes} (${rem.time})` : `Time to record your diary entry! (${rem.time})`,
+                icon: '/favicon.ico',
+              });
+            } catch (err) {
+              console.warn('Native notification trigger failed:', err);
+            }
+          }
+        }
+      });
+    };
+
+    // Run immediately and every 15 seconds
+    checkReminders();
+    const interval = setInterval(checkReminders, 15000);
+    return () => clearInterval(interval);
+  }, [diaryReminders, showToast]);
+
+  // Add Diary Reminder
+  const addDiaryReminder = useCallback(
+    async (reminderData: Omit<DiaryReminder, 'id' | 'userId' | 'createdAt' | 'updatedAt' | 'completed'>): Promise<DiaryReminder> => {
+      const newReminder: DiaryReminder = {
+        id: 'rem-' + Date.now(),
+        userId: currentUserId,
+        title: reminderData.title,
+        date: reminderData.date,
+        time: reminderData.time,
+        notes: reminderData.notes || '',
+        repeat: reminderData.repeat || 'none',
+        completed: false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      setDiaryReminders((prev) => [newReminder, ...prev]);
+      showToast(`Reminder saved: "${newReminder.title}"`, 'success');
+
+      // Persist to server backend
+      try {
+        fetch('/api/diary-reminders', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(newReminder),
+        }).catch((e) => console.warn('Backend save notice:', e));
+      } catch (e) {
+        // Handled locally
+      }
+
+      return newReminder;
+    },
+    [currentUserId, showToast]
+  );
+
+  // Update Diary Reminder
+  const updateDiaryReminder = useCallback(
+    async (id: string, updates: Partial<DiaryReminder>) => {
+      setDiaryReminders((prev) =>
+        prev.map((r) => (r.id === id ? { ...r, ...updates, updatedAt: new Date().toISOString() } : r))
+      );
+      showToast('Reminder updated', 'success');
+
+      try {
+        fetch(`/api/diary-reminders/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(updates),
+        }).catch((e) => console.warn('Backend update notice:', e));
+      } catch (e) {
+        // Handled locally
+      }
+    },
+    [showToast]
+  );
+
+  // Delete Diary Reminder
+  const deleteDiaryReminder = useCallback(
+    async (id: string) => {
+      setDiaryReminders((prev) => prev.filter((r) => r.id !== id));
+      showToast('Reminder deleted', 'info');
+
+      try {
+        fetch(`/api/diary-reminders/${id}`, {
+          method: 'DELETE',
+        }).catch((e) => console.warn('Backend delete notice:', e));
+      } catch (e) {
+        // Handled locally
+      }
+    },
+    [showToast]
+  );
+
+  // Toggle Reminder Completion
+  const toggleDiaryReminderCompletion = useCallback(
+    async (id: string) => {
+      let isNowCompleted = false;
+      setDiaryReminders((prev) =>
+        prev.map((r) => {
+          if (r.id === id) {
+            isNowCompleted = !r.completed;
+            return { ...r, completed: isNowCompleted, updatedAt: new Date().toISOString() };
+          }
+          return r;
+        })
+      );
+
+      if (isNowCompleted) {
+        confetti({ particleCount: 50, spread: 60, origin: { y: 0.7 } });
+        showToast('✓ Reminder marked as completed!', 'success');
+      } else {
+        showToast('Reminder reopened', 'info');
+      }
+
+      try {
+        fetch(`/api/diary-reminders/${id}`, {
+          method: 'PUT',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ completed: isNowCompleted }),
+        }).catch((e) => console.warn('Backend toggle notice:', e));
+      } catch (e) {
+        // Handled locally
+      }
+    },
+    [showToast]
+  );
+
   const resetToSampleData = useCallback(() => {
     setTasks(INITIAL_TASKS);
     setDiaryEntries(INITIAL_DIARY_ENTRIES);
@@ -908,6 +1168,13 @@ export const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children
         deleteSpecialMoment,
         getSpecialMomentsForDate,
         isDateSpecialDay,
+
+        diaryReminders,
+        addDiaryReminder,
+        updateDiaryReminder,
+        deleteDiaryReminder,
+        toggleDiaryReminderCompletion,
+        requestNotificationPermission,
 
         categories,
         addCategory,

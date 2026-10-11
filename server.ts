@@ -155,6 +155,95 @@ app.get('/api/reminders/:email', (req, res) => {
   });
 });
 
+// Diary Reminders (Remained Me) Persistent Endpoints
+let diaryReminders: any[] = [
+  {
+    id: 'reminder-1',
+    userId: 'user-shamyuktha',
+    title: 'Complete project report & submit draft',
+    date: new Date().toISOString().slice(0, 10),
+    time: '20:00',
+    notes: 'Include all research findings, performance metrics, and diagrams.',
+    repeat: 'daily',
+    completed: false,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: 'reminder-2',
+    userId: 'user-shamyuktha',
+    title: 'Write evening reflection in DayFlow',
+    date: new Date().toISOString().slice(0, 10),
+    time: '21:30',
+    notes: 'Jot down today’s achievements and thoughts.',
+    repeat: 'daily',
+    completed: false,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  },
+];
+
+// GET reminders for a user (securely filtered by userId)
+app.get('/api/diary-reminders', (req, res) => {
+  const userId = (req.query.userId as string) || users[0].id;
+  const userReminders = diaryReminders.filter((r) => r.userId === userId);
+  res.json({ success: true, reminders: userReminders });
+});
+
+// POST create reminder
+app.post('/api/diary-reminders', (req, res) => {
+  const { userId, title, date, time, notes, repeat } = req.body;
+  if (!title || !date || !time) {
+    return res.status(400).json({ success: false, error: 'Title, date, and time are required' });
+  }
+  const newReminder = {
+    id: 'rem-' + Date.now(),
+    userId: userId || users[0].id,
+    title,
+    date,
+    time,
+    notes: notes || '',
+    repeat: repeat || 'none',
+    completed: false,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+  diaryReminders.push(newReminder);
+  console.log(`[Remained Me] Created reminder "${title}" for ${newReminder.userId} at ${date} ${time}`);
+  res.json({ success: true, reminder: newReminder });
+});
+
+// PUT update reminder
+app.put('/api/diary-reminders/:id', (req, res) => {
+  const { id } = req.params;
+  const { title, date, time, notes, repeat, completed } = req.body;
+  const idx = diaryReminders.findIndex((r) => r.id === id);
+  if (idx === -1) {
+    return res.status(404).json({ success: false, error: 'Reminder not found' });
+  }
+  diaryReminders[idx] = {
+    ...diaryReminders[idx],
+    ...(title !== undefined && { title }),
+    ...(date !== undefined && { date }),
+    ...(time !== undefined && { time }),
+    ...(notes !== undefined && { notes }),
+    ...(repeat !== undefined && { repeat }),
+    ...(completed !== undefined && { completed }),
+    updatedAt: new Date().toISOString(),
+  };
+  console.log(`[Remained Me] Updated reminder "${id}"`);
+  res.json({ success: true, reminder: diaryReminders[idx] });
+});
+
+// DELETE reminder
+app.delete('/api/diary-reminders/:id', (req, res) => {
+  const { id } = req.params;
+  const initialLength = diaryReminders.length;
+  diaryReminders = diaryReminders.filter((r) => r.id !== id);
+  console.log(`[Remained Me] Deleted reminder "${id}"`);
+  res.json({ success: true, deleted: diaryReminders.length < initialLength });
+});
+
 // Periodic scheduler to check reminder times and send emails
 setInterval(async () => {
   const now = new Date();

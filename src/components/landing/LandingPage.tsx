@@ -102,7 +102,11 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onExplor
     } else {
       login(email);
       setIsAuthModalOpen(false);
-      onGetStarted();
+      if (onSignupSuccess) {
+        onSignupSuccess(email, email.split('@')[0]);
+      } else {
+        onGetStarted();
+      }
     }
   };
 

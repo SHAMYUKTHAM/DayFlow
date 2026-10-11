@@ -32,6 +32,22 @@ export interface ReminderSettings {
   lastSentDate?: string;
 }
 
+export type ReminderRepeat = 'none' | 'daily' | 'weekly' | 'monthly';
+
+export interface DiaryReminder {
+  id: string;
+  userId: string;
+  title: string;
+  date: string; // YYYY-MM-DD
+  time: string; // HH:mm (24-hr or AM/PM string)
+  notes?: string;
+  repeat: ReminderRepeat;
+  completed: boolean;
+  createdAt: string;
+  updatedAt: string;
+  lastTriggeredAt?: string;
+}
+
 export interface User {
   id: string;
   name: string;
@@ -163,4 +179,4 @@ export interface DayStreakStats {
   mostProductiveDay: string;
 }
 
-export type ActiveTab = 'dashboard' | 'tasks' | 'diary' | 'past-entries' | 'calendar' | 'settings';
+export type ActiveTab = 'dashboard' | 'tasks' | 'diary' | 'past-entries' | 'calendar' | 'reminders' | 'settings';

@@ -10,6 +10,7 @@ import {
   Menu,
   History,
   User,
+  Bell,
 } from 'lucide-react';
 
 interface SidebarProps {
@@ -55,6 +56,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
       tab: 'calendar',
       label: 'Calendar',
       icon: <Calendar className="w-5 h-5 shrink-0" />,
+    },
+    {
+      tab: 'reminders',
+      label: 'Remained Me',
+      icon: <Bell className="w-5 h-5 shrink-0" />,
     },
     {
       tab: 'settings',
