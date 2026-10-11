@@ -22,6 +22,16 @@ export interface MoodConfig {
   borderDark: string;
 }
 
+export interface ReminderSettings {
+  enabled: boolean;
+  time: string; // "20:30" (24h format HH:mm)
+  days: ('mon' | 'tue' | 'wed' | 'thu' | 'fri' | 'sat' | 'sun')[];
+  reminderType: 'reflection' | 'planning' | 'both';
+  customEmail?: string;
+  timezone: string;
+  lastSentDate?: string;
+}
+
 export interface User {
   id: string;
   name: string;
@@ -36,6 +46,7 @@ export interface User {
     enableSounds: boolean;
     autoSaveIntervalMs: number;
   };
+  reminderSettings?: ReminderSettings;
 }
 
 export interface Task {

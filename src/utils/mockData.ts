@@ -14,6 +14,13 @@ export const INITIAL_USER: User = {
     enableSounds: true,
     autoSaveIntervalMs: 2000,
   },
+  reminderSettings: {
+    enabled: true,
+    time: '20:30',
+    days: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'],
+    reminderType: 'both',
+    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Kolkata',
+  },
 };
 
 // Generate relative date string offset from today

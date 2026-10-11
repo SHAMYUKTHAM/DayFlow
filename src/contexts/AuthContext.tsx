@@ -48,12 +48,20 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         enableSounds: true,
         autoSaveIntervalMs: 2000,
       },
+      reminderSettings: {
+        enabled: true,
+        time: '20:30',
+        days: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'],
+        reminderType: 'both',
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || 'Asia/Kolkata',
+      },
     };
     setUser(loggedInUser);
+    return loggedInUser;
   };
 
   const signup = (name: string, email: string) => {
-    login(email, name);
+    return login(email, name);
   };
 
   const logout = () => {

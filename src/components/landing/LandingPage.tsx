@@ -18,6 +18,7 @@ import { useAuth } from '../../contexts/AuthContext';
 interface LandingPageProps {
   onGetStarted: () => void;
   onExploreDemo: () => void;
+  onSignupSuccess?: (email: string, name?: string) => void;
 }
 
 const useIntersectionObserver = (options = {}) => {
@@ -53,14 +54,15 @@ const FadeIn: React.FC<{ children: React.ReactNode; delay?: number }> = ({ child
   );
 };
 
-export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onExploreDemo }) => {
+export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onExploreDemo, onSignupSuccess }) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('signup');
+  const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { login, isAuthenticated } = useAuth();
+  const { login, signup, isAuthenticated } = useAuth();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -88,11 +90,20 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onExplor
     e.preventDefault();
     if (!email || !password) return;
     
-    // In this mock application, any password is accepted.
-    // It creates or logs in a mock user based on the email.
-    login(email);
-    setIsAuthModalOpen(false);
-    onGetStarted();
+    if (authMode === 'signup') {
+      const userName = name.trim() || email.split('@')[0];
+      signup(userName, email);
+      setIsAuthModalOpen(false);
+      if (onSignupSuccess) {
+        onSignupSuccess(email, userName);
+      } else {
+        onGetStarted();
+      }
+    } else {
+      login(email);
+      setIsAuthModalOpen(false);
+      onGetStarted();
+    }
   };
 
   const openAuthModal = (mode: 'login' | 'signup') => {
@@ -503,6 +514,25 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onExplor
             </div>
 
             <form onSubmit={handleAuthSubmit} className="space-y-4">
+              {authMode === 'signup' && (
+                <div className="space-y-1.5">
+                  <label className="text-sm font-medium text-stone-700 dark:text-stone-300">Full Name</label>
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none text-stone-400">
+                      <UserIcon className="w-4 h-4" />
+                    </div>
+                    <input
+                      type="text"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      required
+                      className="w-full pl-10 pr-4 py-2.5 bg-stone-50 dark:bg-stone-950 border border-stone-200 dark:border-stone-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-amber-500/50 dark:text-stone-100 text-sm"
+                      placeholder="Your name"
+                    />
+                  </div>
+                </div>
+              )}
+
               <div className="space-y-1.5">
                 <label className="text-sm font-medium text-stone-700 dark:text-stone-300">Email Address</label>
                 <div className="relative">

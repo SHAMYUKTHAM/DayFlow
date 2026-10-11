@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { useAuth } from '../../contexts/AuthContext';
 import { useData } from '../../contexts/DataContext';
 import { Priority } from '../../types';
+import { ReminderTimeSetter } from '../onboarding/ReminderTimeSetter';
 import {
   User,
   Shield,
   Save,
+  BellRing,
 } from 'lucide-react';
 
 interface SettingsViewProps {
@@ -31,7 +33,6 @@ export const SettingsView: React.FC<SettingsViewProps> = () => {
       reader.readAsDataURL(file);
     }
   };
-
 
   const handleSaveProfile = (e: React.FormEvent) => {
     e.preventDefault();
@@ -125,8 +126,6 @@ export const SettingsView: React.FC<SettingsViewProps> = () => {
             />
           </div>
 
-
-
           <div className="pt-2">
             <button
               type="submit"
@@ -137,6 +136,30 @@ export const SettingsView: React.FC<SettingsViewProps> = () => {
             </button>
           </div>
         </form>
+      </div>
+
+      {/* 2. Daily Email Reminder & Schedule Section */}
+      <div className="bg-white dark:bg-stone-900 border border-stone-200 dark:border-stone-800 rounded-2xl p-6 shadow-2xs space-y-4">
+        <div className="flex items-center gap-2.5 pb-2 border-b border-stone-100 dark:border-stone-800">
+          <div className="p-2 rounded-xl bg-amber-100 dark:bg-amber-950/60 text-amber-700 dark:text-amber-300">
+            <BellRing className="w-5 h-5" />
+          </div>
+          <div>
+            <h2 className="text-base font-semibold text-stone-900 dark:text-stone-100">
+              Daily Email Reminders
+            </h2>
+            <p className="text-xs text-stone-500 dark:text-stone-400">
+              Configure what time each day DayFlow emails you with your task focus and reflection prompt.
+            </p>
+          </div>
+        </div>
+
+        <ReminderTimeSetter
+          isSettingsMode={true}
+          onComplete={() => {
+            showToast('Reminder schedule updated successfully!');
+          }}
+        />
       </div>
     </div>
   );

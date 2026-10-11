@@ -4,6 +4,8 @@ import { fileURLToPath } from 'url';
 import dotenv from 'dotenv';
 import { GoogleGenAI } from '@google/genai';
 
+import { sendDailyReminderEmail } from './reminderEmailService';
+
 dotenv.config();
 
 const __filename = fileURLToPath(import.meta.url);
@@ -16,7 +18,7 @@ app.use(express.json());
 
 // In-memory persistent database store initialized with initial data
 // (can be persisted or updated live through REST endpoints)
-let users = [
+let users: any[] = [
   {
     id: 'user-shamyuktha',
     name: 'Shamyuktha',
@@ -28,6 +30,13 @@ let users = [
       defaultPriority: 'medium',
       enableSounds: true,
       autoSaveIntervalMs: 2000,
+    },
+    reminderSettings: {
+      enabled: true,
+      time: '20:30',
+      days: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'],
+      reminderType: 'both',
+      timezone: 'Asia/Kolkata',
     },
   },
 ];
@@ -68,6 +77,13 @@ app.post('/api/auth/signup', (req, res) => {
       enableSounds: true,
       autoSaveIntervalMs: 2000,
     },
+    reminderSettings: {
+      enabled: true,
+      time: '20:30',
+      days: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'],
+      reminderType: 'both',
+      timezone: 'Asia/Kolkata',
+    },
   };
   users.push(newUser);
   res.json({ success: true, user: newUser, token: 'dayflow-session-token-' + newUser.id });
@@ -76,6 +92,134 @@ app.post('/api/auth/signup', (req, res) => {
 app.get('/api/auth/me', (_req, res) => {
   res.json({ user: users[0] });
 });
+
+// Reminder Preferences & Email Dispatch Endpoints
+app.post('/api/reminders/settings', (req, res) => {
+  const { email, reminderSettings } = req.body;
+  let user = users.find((u) => u.email.toLowerCase() === (email || '').toLowerCase());
+  if (!user) {
+    user = {
+      id: 'user-' + Date.now(),
+      email: email || 'user@example.com',
+      name: email ? email.split('@')[0] : 'User',
+      createdAt: new Date().toISOString(),
+      preferences: {
+        theme: 'light',
+        defaultPriority: 'medium',
+        enableSounds: true,
+        autoSaveIntervalMs: 2000,
+      },
+      reminderSettings,
+    };
+    users.push(user);
+  } else {
+    user.reminderSettings = { ...user.reminderSettings, ...reminderSettings };
+  }
+  console.log(`[DayFlow Server] 💾 Saved reminder settings for ${user.email}: Time=${user.reminderSettings?.time}, Enabled=${user.reminderSettings?.enabled}`);
+  res.json({ success: true, user, reminderSettings: user.reminderSettings });
+});
+
+app.post('/api/reminders/send-test', async (req, res) => {
+  const { email, name, time, reminderType, tasks } = req.body;
+  const targetEmail = email || users[0].email;
+  console.log(`[DayFlow Server] 📨 Received test email request for ${targetEmail}`);
+  try {
+    const result = await sendDailyReminderEmail({
+      to: targetEmail,
+      name: name || 'DayFlow Member',
+      time: time || '20:30',
+      reminderType: reminderType || 'both',
+      tasks: tasks || [],
+      isTest: true,
+    });
+    res.json(result);
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: err.message || 'Failed to send test email' });
+  }
+});
+
+app.get('/api/reminders/:email', (req, res) => {
+  const user = users.find((u) => u.email.toLowerCase() === (req.params.email || '').toLowerCase());
+  if (user && user.reminderSettings) {
+    return res.json({ success: true, reminderSettings: user.reminderSettings });
+  }
+  res.json({
+    success: true,
+    reminderSettings: {
+      enabled: true,
+      time: '20:30',
+      days: ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'],
+      reminderType: 'both',
+      timezone: 'Asia/Kolkata',
+    },
+  });
+});
+
+// Periodic scheduler to check reminder times and send emails
+setInterval(async () => {
+  const now = new Date();
+  for (const user of users) {
+    if (!user.reminderSettings || !user.reminderSettings.enabled) continue;
+
+    const { time, days, timezone, lastSentDate } = user.reminderSettings;
+    if (!time) continue;
+
+    let userHours = String(now.getHours()).padStart(2, '0');
+    let userMinutes = String(now.getMinutes()).padStart(2, '0');
+    let userDayName = now.toLocaleDateString('en-US', { weekday: 'short' }).toLowerCase();
+    let todayKey = now.toISOString().slice(0, 10);
+
+    if (timezone) {
+      try {
+        const parts = new Intl.DateTimeFormat('en-US', {
+          timeZone: timezone,
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false,
+          weekday: 'short',
+          year: 'numeric',
+          month: '2-digit',
+          day: '2-digit',
+        }).formatToParts(now);
+
+        const h = parts.find((p) => p.type === 'hour')?.value;
+        const m = parts.find((p) => p.type === 'minute')?.value;
+        const wd = parts.find((p) => p.type === 'weekday')?.value?.toLowerCase();
+        const yr = parts.find((p) => p.type === 'year')?.value;
+        const mo = parts.find((p) => p.type === 'month')?.value;
+        const dy = parts.find((p) => p.type === 'day')?.value;
+
+        if (h && m) {
+          userHours = h === '24' ? '00' : h.padStart(2, '0');
+          userMinutes = m.padStart(2, '0');
+        }
+        if (wd) userDayName = wd.slice(0, 3);
+        if (yr && mo && dy) todayKey = `${yr}-${mo}-${dy}`;
+      } catch (e) {
+        // Fallback to server local time
+      }
+    }
+
+    const currentFormattedTime = `${userHours}:${userMinutes}`;
+    const dayMatches = !days || days.length === 0 || days.includes(userDayName);
+
+    if (dayMatches && currentFormattedTime === time && lastSentDate !== todayKey) {
+      user.reminderSettings.lastSentDate = todayKey;
+      console.log(`[DayFlow Scheduler] ⏰ Daily reminder triggered for ${user.email} at ${currentFormattedTime} (${userDayName})`);
+      try {
+        await sendDailyReminderEmail({
+          to: user.reminderSettings.customEmail || user.email,
+          name: user.name,
+          time: user.reminderSettings.time,
+          reminderType: user.reminderSettings.reminderType || 'both',
+          isTest: false,
+        });
+      } catch (err) {
+        console.error(`[DayFlow Scheduler] Error delivering scheduled email to ${user.email}:`, err);
+      }
+    }
+  }
+}, 30000);
 
 // Optional AI Daily Reflection & Summary Endpoint
 app.post('/api/ai/daily-summary', async (req, res) => {
