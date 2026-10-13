@@ -90,26 +90,20 @@ function MainApp() {
   if (isSettingReminder) {
     return (
       <div className="min-h-screen bg-stone-50 dark:bg-stone-950 text-stone-900 dark:text-stone-100 flex flex-col font-sans transition-colors duration-200">
-        <header className="w-full border-b border-sky-100 dark:border-stone-800 bg-white/90 dark:bg-stone-900/90 backdrop-blur-md px-6 py-4 flex items-center justify-between sticky top-0 z-30 shadow-2xs">
+        <header className="w-full border-b border-stone-200/80 dark:border-stone-800 bg-white/90 dark:bg-stone-900/90 backdrop-blur-md px-6 py-4 flex items-center justify-between sticky top-0 z-30 shadow-2xs">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-sky-600 flex items-center justify-center text-white font-serif font-bold text-lg shadow-2xs">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-stone-800 to-stone-900 dark:from-stone-700 dark:to-stone-800 flex items-center justify-center text-white font-serif font-bold text-lg shadow-sm">
               D
             </div>
             <div>
-              <span className="text-xl font-bold tracking-tight text-slate-900 dark:text-white font-serif">
+              <span className="text-xl font-bold tracking-tight text-stone-900 dark:text-stone-100 font-serif">
                 DayFlow
               </span>
-              <span className="hidden sm:inline-block ml-2 text-xs text-sky-600 dark:text-sky-400 font-semibold">
+              <span className="hidden sm:inline-block ml-2 text-xs text-amber-600 dark:text-amber-500 font-semibold">
                 &bull; Remained Me
               </span>
             </div>
           </div>
-          <button
-            onClick={() => setIsSettingReminder(false)}
-            className="text-xs font-semibold text-slate-500 hover:text-slate-900 dark:hover:text-stone-100 transition-colors px-3 py-1.5 rounded-xl hover:bg-slate-100 dark:hover:bg-stone-800"
-          >
-            Skip to Dashboard &rarr;
-          </button>
         </header>
 
         <main className="flex-1 overflow-y-auto">
