@@ -12,6 +12,7 @@ import {
   X,
   Lock,
   User as UserIcon,
+  ArrowUp,
 } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -56,6 +57,7 @@ const FadeIn: React.FC<{ children: React.ReactNode; delay?: number }> = ({ child
 
 export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onExploreDemo, onSignupSuccess }) => {
   const [isScrolled, setIsScrolled] = useState(false);
+  const [showBackToTop, setShowBackToTop] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [authMode, setAuthMode] = useState<'login' | 'signup'>('signup');
@@ -67,20 +69,29 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onExplor
   useEffect(() => {
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 20);
+      setShowBackToTop(window.scrollY > 200);
     };
-    window.addEventListener('scroll', handleScroll);
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
   const scrollToSection = (id: string) => {
     setIsMobileMenuOpen(false);
+    if (id === 'home') {
+      window.scrollTo({
+        top: 0,
+        behavior: 'smooth'
+      });
+      return;
+    }
     const element = document.getElementById(id);
     if (element) {
       const headerOffset = 80;
       const elementPosition = element.getBoundingClientRect().top;
       const offsetPosition = elementPosition + window.pageYOffset - headerOffset;
       window.scrollTo({
-        top: offsetPosition,
+        top: Math.max(0, offsetPosition),
         behavior: 'smooth'
       });
     }
@@ -480,6 +491,21 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onExplor
           </div>
         </div>
       </footer>
+
+      {/* Floating Back to Hero Page Arrow Button */}
+      <button
+        type="button"
+        onClick={() => scrollToSection('home')}
+        className={`fixed bottom-6 right-6 sm:bottom-8 sm:right-8 z-40 w-12 h-12 rounded-full bg-stone-900 text-white dark:bg-stone-100 dark:text-stone-900 shadow-xl hover:shadow-2xl hover:bg-stone-800 dark:hover:bg-white hover:-translate-y-1 active:translate-y-0 transition-all duration-300 flex items-center justify-center group focus:outline-none focus:ring-2 focus:ring-amber-500/50 border border-stone-800/10 dark:border-stone-200/20 ${
+          showBackToTop
+            ? 'opacity-100 translate-y-0 pointer-events-auto cursor-pointer'
+            : 'opacity-0 translate-y-6 pointer-events-none'
+        }`}
+        aria-label="Back to hero page"
+        title="Back to hero page"
+      >
+        <ArrowUp className="w-5 h-5 transition-transform duration-200 group-hover:-translate-y-0.5" />
+      </button>
 
       {/* AUTHENTICATION MODAL */}
       {isAuthModalOpen && (
