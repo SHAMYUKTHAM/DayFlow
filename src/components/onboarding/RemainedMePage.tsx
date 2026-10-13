@@ -189,12 +189,9 @@ export const RemainedMePage: React.FC<RemainedMePageProps> = ({
                       Change in Profile
                     </span>
                   </div>
-                  <div className="flex items-center justify-between px-3.5 py-2.5 rounded-2xl border border-stone-200 dark:border-stone-700 bg-stone-100/70 dark:bg-stone-800/60 text-stone-700 dark:text-stone-200 text-xs sm:text-sm select-all">
-                    <span className="font-mono text-xs sm:text-sm truncate font-medium">
+                  <div className="flex items-center px-3.5 py-2.5 rounded-2xl border border-stone-200 dark:border-stone-700 bg-stone-100/70 dark:bg-stone-800/60 select-all">
+                    <span className="font-mono text-xs sm:text-sm truncate text-stone-400 dark:text-stone-400 font-medium">
                       {defaultEmail}
-                    </span>
-                    <span className="shrink-0 ml-2 inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-stone-200/80 dark:bg-stone-700 text-stone-700 dark:text-stone-300 border border-stone-300/60 dark:border-stone-600">
-                      Default
                     </span>
                   </div>
                   <p className="text-[11px] text-stone-400 dark:text-stone-500">
@@ -330,12 +327,9 @@ export const RemainedMePage: React.FC<RemainedMePageProps> = ({
                       Change in Profile
                     </span>
                   </div>
-                  <div className="flex items-center justify-between px-3.5 py-2.5 rounded-2xl border border-stone-200 dark:border-stone-700 bg-stone-100/70 dark:bg-stone-800/60 text-stone-700 dark:text-stone-200 text-xs sm:text-sm select-all">
-                    <span className="font-mono text-xs sm:text-sm truncate font-medium">
+                  <div className="flex items-center px-3.5 py-2.5 rounded-2xl border border-stone-200 dark:border-stone-700 bg-stone-100/70 dark:bg-stone-800/60 select-all">
+                    <span className="font-mono text-xs sm:text-sm truncate text-stone-400 dark:text-stone-400 font-medium">
                       {defaultEmail}
-                    </span>
-                    <span className="shrink-0 ml-2 inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-stone-200/80 dark:bg-stone-700 text-stone-700 dark:text-stone-300 border border-stone-300/60 dark:border-stone-600">
-                      Default
                     </span>
                   </div>
                   <p className="text-[11px] text-stone-400 dark:text-stone-500">
