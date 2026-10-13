@@ -475,13 +475,6 @@ export const LandingPage: React.FC<LandingPageProps> = ({ onGetStarted, onExplor
             </div>
           </div>
           
-          <div className="flex flex-wrap justify-center gap-6 text-sm font-medium text-stone-500 dark:text-stone-400">
-            <button onClick={() => scrollToSection('home')} className="hover:text-stone-900 dark:hover:text-stone-100 transition-colors">Home</button>
-            <button onClick={() => scrollToSection('about')} className="hover:text-stone-900 dark:hover:text-stone-100 transition-colors">About</button>
-            <button onClick={() => scrollToSection('how-it-works')} className="hover:text-stone-900 dark:hover:text-stone-100 transition-colors">How It Works</button>
-            <button onClick={() => scrollToSection('contact')} className="hover:text-stone-900 dark:hover:text-stone-100 transition-colors">Contact</button>
-          </div>
-          
           <div className="text-xs text-stone-400">
             &copy; {new Date().getFullYear()} DayFlow. All rights reserved.
           </div>

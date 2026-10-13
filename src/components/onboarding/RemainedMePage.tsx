@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useData } from '../../contexts/DataContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { DiaryReminder, ReminderRepeat } from '../../types';
@@ -16,13 +16,11 @@ import {
   Sparkles,
   Check,
   AlertCircle,
-  AlarmClock,
   ArrowRight,
   ShieldCheck,
-  Volume2,
   BookOpen,
   CheckSquare,
-  AlertTriangle,
+  Mail,
 } from 'lucide-react';
 
 interface RemainedMePageProps {
@@ -36,27 +34,22 @@ export const RemainedMePage: React.FC<RemainedMePageProps> = ({
 }) => {
   const { user } = useAuth();
   const {
-    tasks,
     diaryReminders,
     addDiaryReminder,
     updateDiaryReminder,
     deleteDiaryReminder,
     toggleDiaryReminderCompletion,
-    requestNotificationPermission,
     showToast,
   } = useData();
 
   // LEFT CARD: Incomplete Task Reminder Form states
-  const [taskTitle, setTaskTitle] = useState('');
-  const [taskDate, setTaskDate] = useState(getTodayDateString());
+  const defaultEmail = user?.email || 'shamyuktham6006@gmail.com';
   const [taskHour, setTaskHour] = useState('08');
   const [taskMinute, setTaskMinute] = useState('00');
   const [taskPeriod, setTaskPeriod] = useState<'AM' | 'PM'>('PM');
   const [taskNotes, setTaskNotes] = useState('');
-  const [taskRepeat, setTaskRepeat] = useState<ReminderRepeat>('none');
   const [taskValidationError, setTaskValidationError] = useState('');
   const [isTaskSubmitting, setIsTaskSubmitting] = useState(false);
-  const [selectedPendingTaskId, setSelectedPendingTaskId] = useState<string>('');
 
   // RIGHT CARD: Daily Diary Reminder Form states
   const [diaryTitle, setDiaryTitle] = useState('Write daily evening diary & reflection');
@@ -72,13 +65,7 @@ export const RemainedMePage: React.FC<RemainedMePageProps> = ({
   // Editing state
   const [editingReminderId, setEditingReminderId] = useState<string | null>(null);
 
-  // Browser notification status
-  const [hasPermission, setHasPermission] = useState<boolean>(() => {
-    return typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted';
-  });
 
-  // User pending / incomplete tasks list
-  const pendingTasks = (tasks || []).filter((t) => t.status !== 'completed');
 
   // Filter reminders for the current user
   const currentUserId = user?.id || 'user-shamyuktha';
@@ -112,58 +99,40 @@ export const RemainedMePage: React.FC<RemainedMePageProps> = ({
     return `${hourNum}:${m || '00'} ${ampm}`;
   };
 
-  const handleRequestPermission = async () => {
-    const granted = await requestNotificationPermission();
-    setHasPermission(granted);
-  };
-
-  // Quick select an incomplete task to auto-fill left card
-  const handleSelectPendingTask = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const taskId = e.target.value;
-    setSelectedPendingTaskId(taskId);
-    if (!taskId) return;
-    const t = pendingTasks.find((task) => task.id === taskId);
-    if (t) {
-      setTaskTitle(t.title);
-      if (t.dueDate) setTaskDate(t.dueDate);
-      if (t.description) setTaskNotes(t.description);
-    }
-  };
-
   // Submit Left Card: Incomplete Task Reminder
   const handleSubmitTaskReminder = async (e: React.FormEvent) => {
     e.preventDefault();
     setTaskValidationError('');
 
-    if (!taskTitle.trim()) {
-      setTaskValidationError('Please enter what task you want to be reminded about.');
-      return;
-    }
-    if (!taskDate) {
-      setTaskValidationError('Please select a date for the task reminder.');
+    if (!taskNotes.trim()) {
+      setTaskValidationError('Please enter notes to remind.');
       return;
     }
 
     setIsTaskSubmitting(true);
     const finalTime = formatTime24(taskHour, taskMinute, taskPeriod);
+    const title = taskNotes.trim().length > 40
+      ? `${taskNotes.trim().slice(0, 37)}...`
+      : taskNotes.trim();
 
     try {
+
       if (editingReminderId) {
         await updateDiaryReminder(editingReminderId, {
-          title: taskTitle.trim(),
-          date: taskDate,
+          title,
+          date: getTodayDateString(),
           time: finalTime,
           notes: taskNotes.trim(),
-          repeat: taskRepeat,
+          repeat: 'daily',
         });
         setEditingReminderId(null);
       } else {
         await addDiaryReminder({
-          title: taskTitle.trim(),
-          date: taskDate,
+          title,
+          date: getTodayDateString(),
           time: finalTime,
-          notes: taskNotes.trim() || 'Incomplete task reminder',
-          repeat: taskRepeat,
+          notes: taskNotes.trim(),
+          repeat: 'daily',
         });
 
         confetti({
@@ -173,11 +142,9 @@ export const RemainedMePage: React.FC<RemainedMePageProps> = ({
         });
       }
 
-      setTaskTitle('');
       setTaskNotes('');
-      setTaskRepeat('none');
-      setSelectedPendingTaskId('');
       setTaskValidationError('');
+      showToast('Task reminder saved successfully!', 'success');
     } catch (err) {
       showToast('Could not save task reminder.', 'error');
     } finally {
@@ -229,10 +196,7 @@ export const RemainedMePage: React.FC<RemainedMePageProps> = ({
   // Edit existing reminder
   const handleEditClick = (rem: DiaryReminder) => {
     setEditingReminderId(rem.id);
-    setTaskTitle(rem.title);
-    setTaskDate(rem.date);
-    setTaskNotes(rem.notes || '');
-    setTaskRepeat(rem.repeat || 'none');
+    setTaskNotes(rem.notes || rem.title || '');
 
     // Parse time into hour, minute, and period
     let timeRaw = rem.time;
@@ -257,10 +221,7 @@ export const RemainedMePage: React.FC<RemainedMePageProps> = ({
 
   const handleCancelEdit = () => {
     setEditingReminderId(null);
-    setTaskTitle('');
     setTaskNotes('');
-    setTaskRepeat('none');
-    setTaskDate(getTodayDateString());
   };
 
   return (
@@ -286,40 +247,6 @@ export const RemainedMePage: React.FC<RemainedMePageProps> = ({
           </p>
         </div>
 
-        {/* Notification Permission Banner */}
-        <div className="mb-8 p-4 rounded-2xl bg-white dark:bg-stone-900 border border-sky-100 dark:border-sky-900/40 shadow-xs flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-          <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-sky-50 dark:bg-sky-950 flex items-center justify-center text-sky-600 dark:text-sky-400 shrink-0">
-              <AlarmClock className="w-5 h-5" />
-            </div>
-            <div>
-              <div className="text-xs sm:text-sm font-semibold text-slate-900 dark:text-white">
-                Browser Alarm & Notification Alerts
-              </div>
-              <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400">
-                {hasPermission
-                  ? 'Active · You will receive alarms and desktop notifications when any task or diary reminder is due.'
-                  : 'Enable browser notifications so your reminders ring right on schedule.'}
-              </p>
-            </div>
-          </div>
-
-          {!hasPermission ? (
-            <button
-              type="button"
-              onClick={handleRequestPermission}
-              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-semibold rounded-xl bg-sky-600 hover:bg-sky-700 text-white transition-colors shadow-2xs whitespace-nowrap"
-            >
-              <Volume2 className="w-3.5 h-3.5" />
-              <span>Enable Alerts</span>
-            </button>
-          ) : (
-            <span className="inline-flex items-center gap-1 text-xs font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2.5 py-1 rounded-lg">
-              <Check className="w-3.5 h-3.5" />
-              <span>Enabled</span>
-            </span>
-          )}
-        </div>
 
         {/* TWO CARDS SIDE-BY-SIDE GRID */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-8 items-start mb-12">
@@ -357,157 +284,98 @@ export const RemainedMePage: React.FC<RemainedMePageProps> = ({
                 )}
               </div>
 
-              {/* Pending Task Quick Selector if incomplete tasks exist */}
-              {pendingTasks.length > 0 && !editingReminderId && (
-                <div className="mb-4 p-3 rounded-2xl bg-sky-50/70 dark:bg-sky-950/40 border border-sky-100 dark:border-sky-900/40 space-y-1.5">
-                  <label className="text-[11px] font-bold text-sky-900 dark:text-sky-200 flex items-center gap-1.5">
-                    <AlertTriangle className="w-3.5 h-3.5 text-sky-600" />
-                    <span>Quick Select Incomplete Task ({pendingTasks.length} pending):</span>
-                  </label>
-                  <select
-                    value={selectedPendingTaskId}
-                    onChange={handleSelectPendingTask}
-                    className="w-full px-3 py-2 rounded-xl text-xs bg-white dark:bg-stone-800 border border-sky-200 dark:border-stone-700 text-slate-800 dark:text-slate-100 font-medium focus:outline-none focus:ring-2 focus:ring-sky-500/50"
-                  >
-                    <option value="">-- Choose an unfinished task to auto-fill --</option>
-                    {pendingTasks.map((pt) => (
-                      <option key={pt.id} value={pt.id}>
-                        {pt.title} {pt.priority ? `(${pt.priority.toUpperCase()} priority)` : ''}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              )}
-
               {/* Form */}
               <form onSubmit={handleSubmitTaskReminder} className="space-y-4">
-                {/* 1. What task do you want to remember? */}
+                {/* 1. Default Email (Static) */}
                 <div className="space-y-1.5">
-                  <label className="block text-xs font-semibold text-slate-800 dark:text-slate-200">
-                    What task do you want to remember? <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={taskTitle}
-                    onChange={(e) => setTaskTitle(e.target.value)}
-                    placeholder="e.g., Complete my project report"
-                    className="w-full px-3.5 py-2.5 rounded-2xl border border-slate-200 dark:border-stone-700 bg-slate-50/50 dark:bg-stone-800/50 text-slate-900 dark:text-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50 focus:border-sky-500 transition-all placeholder:text-slate-400"
-                    required
-                  />
+                  <div className="flex items-center justify-between">
+                    <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200">
+                      <Mail className="w-3.5 h-3.5 text-sky-600" />
+                      <span>Default Email</span>
+                    </label>
+                    <span className="text-[10px] text-slate-400 dark:text-stone-400 font-medium">
+                      Change in Profile
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between px-3.5 py-2.5 rounded-2xl border border-slate-200/80 dark:border-stone-700 bg-slate-100/70 dark:bg-stone-800/60 text-slate-700 dark:text-slate-200 text-xs sm:text-sm select-all">
+                    <span className="font-mono text-xs sm:text-sm truncate font-medium">
+                      {defaultEmail}
+                    </span>
+                    <span className="shrink-0 ml-2 inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-semibold bg-sky-50 dark:bg-sky-950/70 text-sky-700 dark:text-sky-300 border border-sky-100 dark:border-sky-800/60">
+                      Default
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-slate-400 dark:text-stone-400">
+                    Reminders are sent to this address. To change it, visit your Profile page.
+                  </p>
                 </div>
 
-                {/* Date & Time Row */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  {/* Date */}
-                  <div className="space-y-1.5">
-                    <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200">
-                      <CalendarIcon className="w-3.5 h-3.5 text-sky-600" />
-                      <span>Date</span> <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="date"
-                      value={taskDate}
-                      onChange={(e) => setTaskDate(e.target.value)}
-                      className="w-full px-3 py-2 rounded-2xl border border-slate-200 dark:border-stone-700 bg-slate-50/50 dark:bg-stone-800/50 text-slate-900 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-sky-500/50"
-                      required
-                    />
-                  </div>
-
-                  {/* Set Time */}
-                  <div className="space-y-1.5">
-                    <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200">
-                      <Clock className="w-3.5 h-3.5 text-sky-600" />
-                      <span>Set Time</span> <span className="text-red-500">*</span>
-                    </label>
-                    <div className="flex items-center gap-1.5">
-                      <select
-                        value={taskHour}
-                        onChange={(e) => setTaskHour(e.target.value)}
-                        className="w-14 px-2 py-2 rounded-xl border border-slate-200 dark:border-stone-700 bg-slate-50/50 dark:bg-stone-800/50 text-slate-900 dark:text-white text-xs font-semibold focus:outline-none"
+                {/* 2. Time Setter */}
+                <div className="space-y-1.5">
+                  <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200">
+                    <Clock className="w-3.5 h-3.5 text-sky-600" />
+                    <span>Time Setter</span> <span className="text-red-500">*</span>
+                  </label>
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={taskHour}
+                      onChange={(e) => setTaskHour(e.target.value)}
+                      className="w-16 px-2.5 py-2 rounded-xl border border-slate-200 dark:border-stone-700 bg-slate-50/50 dark:bg-stone-800/50 text-slate-900 dark:text-white text-xs font-semibold focus:outline-none"
+                    >
+                      {Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0')).map((h) => (
+                        <option key={h} value={h}>
+                          {h}
+                        </option>
+                      ))}
+                    </select>
+                    <span className="font-bold text-slate-400">:</span>
+                    <select
+                      value={taskMinute}
+                      onChange={(e) => setTaskMinute(e.target.value)}
+                      className="w-16 px-2.5 py-2 rounded-xl border border-slate-200 dark:border-stone-700 bg-slate-50/50 dark:bg-stone-800/50 text-slate-900 dark:text-white text-xs font-semibold focus:outline-none"
+                    >
+                      {['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'].map((m) => (
+                        <option key={m} value={m}>
+                          {m}
+                        </option>
+                      ))}
+                    </select>
+                    <div className="flex rounded-xl border border-slate-200 dark:border-stone-700 p-0.5 bg-slate-100 dark:bg-stone-800">
+                      <button
+                        type="button"
+                        onClick={() => setTaskPeriod('AM')}
+                        className={`px-2.5 py-1 rounded-lg text-[10px] font-bold ${
+                          taskPeriod === 'AM' ? 'bg-sky-600 text-white' : 'text-slate-600 dark:text-slate-400'
+                        }`}
                       >
-                        {Array.from({ length: 12 }, (_, i) => String(i + 1).padStart(2, '0')).map((h) => (
-                          <option key={h} value={h}>
-                            {h}
-                          </option>
-                        ))}
-                      </select>
-                      <span className="font-bold text-slate-400">:</span>
-                      <select
-                        value={taskMinute}
-                        onChange={(e) => setTaskMinute(e.target.value)}
-                        className="w-14 px-2 py-2 rounded-xl border border-slate-200 dark:border-stone-700 bg-slate-50/50 dark:bg-stone-800/50 text-slate-900 dark:text-white text-xs font-semibold focus:outline-none"
+                        AM
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setTaskPeriod('PM')}
+                        className={`px-2.5 py-1 rounded-lg text-[10px] font-bold ${
+                          taskPeriod === 'PM' ? 'bg-sky-600 text-white' : 'text-slate-600 dark:text-slate-400'
+                        }`}
                       >
-                        {['00', '05', '10', '15', '20', '25', '30', '35', '40', '45', '50', '55'].map((m) => (
-                          <option key={m} value={m}>
-                            {m}
-                          </option>
-                        ))}
-                      </select>
-                      <div className="flex rounded-xl border border-slate-200 dark:border-stone-700 p-0.5 bg-slate-100 dark:bg-stone-800">
-                        <button
-                          type="button"
-                          onClick={() => setTaskPeriod('AM')}
-                          className={`px-2 py-1 rounded-lg text-[10px] font-bold ${
-                            taskPeriod === 'AM' ? 'bg-sky-600 text-white' : 'text-slate-600 dark:text-slate-400'
-                          }`}
-                        >
-                          AM
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => setTaskPeriod('PM')}
-                          className={`px-2 py-1 rounded-lg text-[10px] font-bold ${
-                            taskPeriod === 'PM' ? 'bg-sky-600 text-white' : 'text-slate-600 dark:text-slate-400'
-                          }`}
-                        >
-                          PM
-                        </button>
-                      </div>
+                        PM
+                      </button>
                     </div>
                   </div>
                 </div>
 
-                {/* Task Notes */}
+                {/* 3. Notes to Remind */}
                 <div className="space-y-1.5">
                   <label className="block text-xs font-semibold text-slate-800 dark:text-slate-200">
-                    Task Notes <span className="text-[10px] text-slate-400">(Optional)</span>
+                    Notes to Remind <span className="text-red-500">*</span>
                   </label>
                   <textarea
                     value={taskNotes}
                     onChange={(e) => setTaskNotes(e.target.value)}
-                    placeholder="Details, checklist items, or deadlines..."
-                    rows={2}
-                    className="w-full px-3 py-2 rounded-2xl border border-slate-200 dark:border-stone-700 bg-slate-50/50 dark:bg-stone-800/50 text-slate-900 dark:text-white text-xs focus:outline-none focus:ring-2 focus:ring-sky-500/50 resize-none"
+                    placeholder="What would you like to be reminded about? Write your notes or tasks here..."
+                    rows={3}
+                    className="w-full px-3.5 py-2.5 rounded-2xl border border-slate-200 dark:border-stone-700 bg-slate-50/50 dark:bg-stone-800/50 text-slate-900 dark:text-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-sky-500/50 focus:border-sky-500 transition-all placeholder:text-slate-400 resize-none"
+                    required
                   />
-                </div>
-
-                {/* Repeat */}
-                <div className="space-y-1.5">
-                  <label className="flex items-center gap-1.5 text-xs font-semibold text-slate-800 dark:text-slate-200">
-                    <Repeat className="w-3.5 h-3.5 text-sky-600" />
-                    <span>Repeat Reminder</span>
-                  </label>
-                  <div className="grid grid-cols-4 gap-1.5">
-                    {[
-                      { id: 'none', label: 'None' },
-                      { id: 'daily', label: 'Daily' },
-                      { id: 'weekly', label: 'Weekly' },
-                      { id: 'monthly', label: 'Monthly' },
-                    ].map((item) => (
-                      <button
-                        key={item.id}
-                        type="button"
-                        onClick={() => setTaskRepeat(item.id as ReminderRepeat)}
-                        className={`py-1.5 px-2 rounded-xl text-[11px] font-semibold border transition-all ${
-                          taskRepeat === item.id
-                            ? 'bg-sky-50 dark:bg-sky-950/60 border-sky-500 text-sky-700 dark:text-sky-300 ring-2 ring-sky-500/20'
-                            : 'bg-white dark:bg-stone-800 border-slate-200 dark:border-stone-700 text-slate-600 dark:text-slate-400 hover:border-slate-300'
-                        }`}
-                      >
-                        {item.label}
-                      </button>
-                    ))}
-                  </div>
                 </div>
 
                 {taskValidationError && (
@@ -517,6 +385,7 @@ export const RemainedMePage: React.FC<RemainedMePageProps> = ({
                   </div>
                 )}
 
+                {/* 4. Save Button */}
                 <div className="pt-2">
                   <button
                     type="submit"
